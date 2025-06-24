@@ -6,7 +6,7 @@ import { Zap, AlertCircle, Lock, Unlock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import FloatingLabelInput from './FloatingLabelInput';
 import DragDropZone from './DragDropZone';
-import MetadataPreview from './MetadataPreview';
+import TokenPreview from './TokenPreview';
 import SuccessModal from './SuccessModal';
 
 interface HijackFormProps {
@@ -86,9 +86,18 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
   return (
     <>
       <div className={`space-y-6 transition-all duration-500 ${isConnected ? 'animate-slide-up' : 'opacity-60'}`}>
+        {/* Token Preview */}
+        <TokenPreview
+          tokenName={tokenName}
+          ticker={ticker}
+          imagePreview={imagePreview}
+          isSubmitting={isSubmitting}
+        />
+
+        {/* Hijack Form */}
         <Card className={`bg-card/80 backdrop-blur-sm border-border transition-all duration-300 ${isConnected ? 'border-primary/30 glow-red' : ''}`}>
           <CardHeader>
-            <CardTitle className="text-3xl flex items-center gap-3 text-glow font-space-grotesk">
+            <CardTitle className="text-2xl md:text-3xl flex items-center gap-3 text-glow font-space-grotesk">
               <Zap className="w-8 h-8 text-primary animate-pulse" />
               Hijack Token Metadata
             </CardTitle>
@@ -98,7 +107,7 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
           </CardHeader>
           
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-8">
+            <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FloatingLabelInput
                   id="tokenName"
@@ -132,12 +141,6 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
                 />
               </div>
 
-              <MetadataPreview
-                tokenName={tokenName}
-                ticker={ticker}
-                imagePreview={imagePreview}
-              />
-
               <div className="bg-secondary/30 p-6 rounded-lg border border-primary/20 neon-red">
                 <div className="flex items-start gap-3">
                   <AlertCircle className="w-6 h-6 text-primary mt-1 animate-pulse" />
@@ -159,7 +162,7 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
               <Button
                 type="submit"
                 disabled={!isFormValid || isSubmitting}
-                className={`w-full h-16 text-xl font-bold transition-all duration-300 button-unlock ${
+                className={`w-full h-16 text-xl font-bold transition-all duration-300 button-unlock hover:shadow-2xl active:scale-95 ${
                   isFormValid 
                     ? 'bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 glow-red hover:glow-red-intense animate-glow-pulse' 
                     : 'bg-secondary border border-border'

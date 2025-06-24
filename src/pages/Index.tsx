@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import Header from '@/components/Header';
 import WalletConnection from '@/components/WalletConnection';
 import HijackForm from '@/components/HijackForm';
+import HijackHistory from '@/components/HijackHistory';
 
 const Index = () => {
   const [isWalletConnected, setIsWalletConnected] = useState(false);
@@ -25,18 +26,29 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="main-content">
-        <div className="container mx-auto px-4 py-8 max-w-6xl">
+        <div className="container mx-auto px-4 py-8 max-w-7xl">
           <Header />
           
-          <div className="max-w-4xl mx-auto space-y-8">
+          <div className="max-w-5xl mx-auto mb-8">
             <WalletConnection
               isConnected={isWalletConnected}
               walletAddress={walletAddress}
               onConnect={handleWalletConnect}
               onDisconnect={handleWalletDisconnect}
             />
+          </div>
+
+          {/* Two Column Layout */}
+          <div className="max-w-7xl mx-auto grid grid-cols-1 xl:grid-cols-2 gap-8 lg:gap-12">
+            {/* Left Column - Hijack Form */}
+            <div className="space-y-6">
+              <HijackForm isConnected={isWalletConnected} />
+            </div>
             
-            <HijackForm isConnected={isWalletConnected} />
+            {/* Right Column - Hijack History */}
+            <div className="space-y-6">
+              <HijackHistory />
+            </div>
           </div>
 
           <footer className="text-center mt-20 text-muted-foreground animate-slide-up">
