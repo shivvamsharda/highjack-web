@@ -1,7 +1,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
-import { Connection, PublicKey, Keypair } from 'https://esm.sh/@solana/web3.js@1.98.2'
+import { Connection, PublicKey, Keypair, SystemProgram } from 'https://esm.sh/@solana/web3.js@1.98.2'
 import { createUmi } from 'https://esm.sh/@metaplex-foundation/umi-bundle-defaults@0.9.2'
 import { createSignerFromKeypair, signerIdentity } from 'https://esm.sh/@metaplex-foundation/umi@0.9.2'
 import { updateV1, fetchMetadataFromSeeds } from 'https://esm.sh/@metaplex-foundation/mpl-token-metadata@3.2.1'
@@ -72,31 +72,76 @@ serve(async (req) => {
     console.log('Verifying payment transaction...')
 
     // Verify the payment transaction exists and is confirmed
-    const txDetails = await connection.getTransaction(paymentSignature, {
-      commitment: 'confirmed'
-    })
+    let txDetails
+    try {
+      txDetails = await connection.getTransaction(paymentSignature, {
+        commitment: 'confirmed'
+      })
+    } catch (error) {
+      console.error('Error fetching transaction:', error)
+      throw new Error('Failed to fetch payment transaction')
+    }
 
     if (!txDetails) {
       throw new Error('Payment transaction not found or not confirmed')
     }
 
-    // Verify the payment was sent to the correct treasury wallet
+    console.log('Transaction details found, verifying payment to treasury...')
+
+    // Improved payment verification logic
     const instructions = txDetails.transaction.message.instructions
     let paymentToTreasury = false
 
-    for (const instruction of instructions) {
-      // Check if this is a system transfer instruction
-      if (instruction.programId.equals(new PublicKey('11111111111111111111111111111112'))) {
-        const accounts = instruction.accounts
-        if (accounts.length >= 2) {
-          const recipientKey = txDetails.transaction.message.accountKeys[accounts[1]]
-          if (recipientKey.equals(treasuryWallet)) {
-            paymentToTreasury = true
-            console.log('Payment verified: sent to treasury wallet')
-            break
+    try {
+      for (let i = 0; i < instructions.length; i++) {
+        const instruction = instructions[i]
+        
+        // Get the program ID safely
+        let instructionProgramId: PublicKey | null = null
+        
+        if (instruction && typeof instruction === 'object') {
+          // Try to get programId from the instruction
+          if ('programId' in instruction && instruction.programId) {
+            instructionProgramId = instruction.programId
+          } else if ('programIdIndex' in instruction && typeof instruction.programIdIndex === 'number') {
+            // Get program ID from account keys using the index
+            const accountKeys = txDetails.transaction.message.accountKeys
+            if (accountKeys && accountKeys[instruction.programIdIndex]) {
+              instructionProgramId = accountKeys[instruction.programIdIndex]
+            }
+          }
+        }
+
+        console.log(`Instruction ${i}: programId =`, instructionProgramId?.toBase58() || 'undefined')
+
+        // Check if this is a system transfer instruction
+        if (instructionProgramId && instructionProgramId.equals(SystemProgram.programId)) {
+          console.log('Found system program instruction, checking accounts...')
+          
+          // Get account indices from instruction
+          const accounts = instruction.accounts || []
+          console.log('Instruction accounts:', accounts)
+          
+          if (accounts.length >= 2) {
+            // accounts[1] should be the recipient (to) account
+            const accountKeys = txDetails.transaction.message.accountKeys
+            if (accountKeys && accountKeys[accounts[1]]) {
+              const recipientKey = accountKeys[accounts[1]]
+              console.log('Recipient key:', recipientKey.toBase58())
+              console.log('Treasury key:', treasuryWallet.toBase58())
+              
+              if (recipientKey.equals(treasuryWallet)) {
+                paymentToTreasury = true
+                console.log('Payment verified: sent to treasury wallet')
+                break
+              }
+            }
           }
         }
       }
+    } catch (verificationError) {
+      console.error('Error during payment verification:', verificationError)
+      throw new Error(`Payment verification failed: ${verificationError.message}`)
     }
 
     if (!paymentToTreasury) {
