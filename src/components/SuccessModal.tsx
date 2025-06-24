@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -40,7 +39,38 @@ const SuccessModal: React.FC<SuccessModalProps> = ({
     });
   };
 
-  const truncateSignature = (sig: string) => {
+  const truncateSignature = (sig: string | Uint8Array | undefined): string => {
+    // Safety check: ensure we have a valid signature
+    if (!sig) return 'No signature';
+    
+    // Convert Uint8Array to string if needed (fallback)
+    if (sig instanceof Uint8Array) {
+      // This should not happen anymore, but keeping as safety fallback
+      try {
+        // Convert to base58 string
+        const encoder = new TextEncoder();
+        const base58Chars = '123456789ABCDEFGHJKMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+        let num = sig.reduce((acc, byte, index) => acc + byte * Math.pow(256, sig.length - 1 - index), 0);
+        let encoded = '';
+        while (num > 0) {
+          encoded = base58Chars[num % 58] + encoded;
+          num = Math.floor(num / 58);
+        }
+        sig = encoded || 'Invalid signature';
+      } catch (error) {
+        console.error('Error converting Uint8Array signature:', error);
+        return 'Invalid signature format';
+      }
+    }
+    
+    // Ensure it's a string
+    if (typeof sig !== 'string') {
+      console.error('Signature is not a string:', typeof sig, sig);
+      return 'Invalid signature';
+    }
+    
+    // Truncate the string
+    if (sig.length < 16) return sig;
     return `${sig.slice(0, 8)}...${sig.slice(-8)}`;
   };
 
@@ -139,7 +169,12 @@ const SuccessModal: React.FC<SuccessModalProps> = ({
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => copyTransactionId(updateTransactionSignature, 'Update')}
+                        onClick={() => {
+                          const sigString = typeof updateTransactionSignature === 'string' 
+                            ? updateTransactionSignature 
+                            : 'Invalid signature';
+                          copyTransactionId(sigString, 'Update');
+                        }}
                         className="h-6 w-6"
                       >
                         <Copy className="w-3 h-3" />

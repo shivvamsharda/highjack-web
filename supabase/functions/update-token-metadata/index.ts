@@ -328,10 +328,14 @@ serve(async (req) => {
       },
     }).sendAndConfirm(umi)
 
-    console.log('Metadata update transaction signature:', updateResult.signature)
+    // Convert the signature to base58 string
+    const bs58 = await import('https://esm.sh/bs58@5.0.0')
+    const updateTransactionSignatureString = bs58.encode(updateResult.signature)
+    
+    console.log('Metadata update transaction signature:', updateTransactionSignatureString)
 
     const explorerUrl = `https://explorer.solana.com/tx/${paymentSignature}`
-    const updateExplorerUrl = `https://explorer.solana.com/tx/${updateResult.signature}`
+    const updateExplorerUrl = `https://explorer.solana.com/tx/${updateTransactionSignatureString}`
 
     // Update hijack record with success data
     const { error: updateError } = await supabase
@@ -342,8 +346,7 @@ serve(async (req) => {
         image_uri: imageUri,
         metadata_uri: metadataUri,
         new_metadata: metadata,
-        block_time: txDetails?.blockTime,
-        update_transaction_signature: updateResult.signature
+        block_time: txDetails?.blockTime
       })
       .eq('id', hijackRecordId)
 
@@ -357,7 +360,7 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         transactionSignature: paymentSignature,
-        updateTransactionSignature: updateResult.signature,
+        updateTransactionSignature: updateTransactionSignatureString,
         explorerUrl,
         updateExplorerUrl,
         imageUri,
