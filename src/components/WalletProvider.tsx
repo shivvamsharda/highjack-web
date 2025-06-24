@@ -1,5 +1,5 @@
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { ConnectionProvider, WalletProvider } from '@solana/wallet-adapter-react';
 import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
 import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
@@ -7,6 +7,7 @@ import {
   PhantomWalletAdapter,
   SolflareWalletAdapter,
 } from '@solana/wallet-adapter-wallets';
+import { supabase } from '@/integrations/supabase/client';
 
 // Import wallet adapter CSS
 import '@solana/wallet-adapter-react-ui/styles.css';
@@ -16,16 +17,32 @@ interface SolanaWalletProviderProps {
 }
 
 const SolanaWalletProvider: React.FC<SolanaWalletProviderProps> = ({ children }) => {
+  const [rpcEndpoint, setRpcEndpoint] = useState<string>('https://api.mainnet-beta.solana.com');
+
+  useEffect(() => {
+    const fetchRpcEndpoint = async () => {
+      try {
+        // Fetch the same RPC_URL that the backend edge functions use
+        const { data, error } = await supabase.functions.invoke('get-rpc-endpoint');
+        if (data && data.rpcUrl) {
+          setRpcEndpoint(data.rpcUrl);
+          console.log('Using RPC endpoint:', data.rpcUrl);
+        } else {
+          console.warn('Could not fetch RPC endpoint, using default:', error);
+        }
+      } catch (error) {
+        console.warn('Failed to fetch RPC endpoint, using default:', error);
+      }
+    };
+
+    fetchRpcEndpoint();
+  }, []);
+
   // Use mainnet for production - this is where real SOL transactions happen
   const network = WalletAdapterNetwork.Mainnet;
   
-  // Use a reliable RPC endpoint instead of the public rate-limited one
-  // This should match the RPC_URL used in the Supabase edge function
-  const endpoint = useMemo(() => {
-    // Using Helius free tier as a more reliable option than the public RPC
-    // You can replace this with your preferred RPC provider (QuickNode, Alchemy, etc.)
-    return 'https://mainnet.helius-rpc.com/?api-key=public';
-  }, []);
+  // Use the same RPC endpoint as the backend for consistency
+  const endpoint = useMemo(() => rpcEndpoint, [rpcEndpoint]);
   
   const wallets = useMemo(
     () => [
