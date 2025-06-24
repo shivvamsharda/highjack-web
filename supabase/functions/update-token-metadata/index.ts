@@ -23,6 +23,9 @@ serve(async (req) => {
   const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
   const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
+  // Import bs58 once at the top level to avoid conflicts
+  const bs58 = await import('https://esm.sh/bs58@5.0.0')
+
   let hijackRecordId: string | null = null
 
   try {
@@ -186,8 +189,7 @@ serve(async (req) => {
         const keyArray = JSON.parse(walletKeyStr)
         privateKeyBytes = new Uint8Array(keyArray)
       } else {
-        // Assume base58 format
-        const bs58 = await import('https://esm.sh/bs58@5.0.0')
+        // Assume base58 format - use the single bs58 instance
         privateKeyBytes = bs58.decode(walletKeyStr)
       }
       updateAuthorityKeypair = Keypair.fromSecretKey(privateKeyBytes)
@@ -328,8 +330,7 @@ serve(async (req) => {
       },
     }).sendAndConfirm(umi)
 
-    // Convert the signature to base58 string
-    const bs58 = await import('https://esm.sh/bs58@5.0.0')
+    // Convert the signature to base58 string using the single bs58 instance
     const updateTransactionSignatureString = bs58.encode(updateResult.signature)
     
     console.log('Metadata update transaction signature:', updateTransactionSignatureString)
