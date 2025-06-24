@@ -156,7 +156,7 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
                           ⚡ Real On-Chain Update
                         </div>
                         <p className="text-muted-foreground">
-                          This hijack costs <span className="text-primary font-bold text-lg">0.1 SOL</span> to 
+                          This hijack costs <span className="text-primary font-bold text-lg">0.01 SOL</span> to 
                           permanently update the token metadata on Solana mainnet.
                         </p>
                         <div className="text-xs text-muted-foreground mt-2">
@@ -193,7 +193,7 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
                     ) : (
                       <div className="flex items-center gap-3">
                         <LockIcon className="w-6 h-6" />
-                        🔓 Pay 0.1 SOL to Hijack
+                        🔓 Pay 0.01 SOL to Hijack
                       </div>
                     )}
                   </Button>

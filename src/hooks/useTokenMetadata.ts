@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -169,7 +168,7 @@ export const useTokenMetadata = () => {
   const calculateActualFee = async (): Promise<number> => {
     // For now, return the fixed fee
     // In the future, this could calculate actual transaction costs
-    return 0.1;
+    return 0.01;
   };
 
   return {
