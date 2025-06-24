@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
 import { Connection, Keypair, PublicKey, Transaction, SystemProgram, sendAndConfirmTransaction, LAMPORTS_PER_SOL } from 'https://esm.sh/@solana/web3.js@1.98.2'
@@ -14,6 +15,13 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders })
   }
 
+  // Initialize Supabase client
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+  const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+  const supabase = createClient(supabaseUrl, supabaseServiceKey)
+
+  let hijackRecordId: string | null = null
+
   try {
     console.log('Starting token metadata update process...')
     
@@ -29,6 +37,29 @@ serve(async (req) => {
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       )
     }
+
+    // Create initial hijack record in database
+    const { data: hijackRecord, error: insertError } = await supabase
+      .from('token_hijacks')
+      .insert({
+        wallet_address: userWalletAddress,
+        token_name: tokenName,
+        ticker_symbol: ticker.toUpperCase(),
+        image_file_name: imageFile.name,
+        image_file_size: imageFile.size,
+        image_file_type: imageFile.type,
+        status: 'processing'
+      })
+      .select()
+      .single()
+
+    if (insertError) {
+      console.error('Error creating hijack record:', insertError)
+      throw new Error('Failed to create hijack record')
+    }
+
+    hijackRecordId = hijackRecord.id
+    console.log('Created hijack record:', hijackRecordId)
 
     // Get environment variables
     const rpcUrl = Deno.env.get('RPC_URL')
@@ -129,11 +160,31 @@ serve(async (req) => {
       commitment: 'confirmed'
     })
 
+    const explorerUrl = `https://explorer.solana.com/tx/${response.signature}`
+
+    // Update hijack record with success data
+    const { error: updateError } = await supabase
+      .from('token_hijacks')
+      .update({
+        status: 'completed',
+        transaction_signature: response.signature,
+        explorer_url: explorerUrl,
+        image_uri: imageUri,
+        metadata_uri: metadataUri,
+        new_metadata: metadata,
+        block_time: txDetails?.blockTime
+      })
+      .eq('id', hijackRecordId)
+
+    if (updateError) {
+      console.error('Error updating hijack record:', updateError)
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
         transactionSignature: response.signature,
-        explorerUrl: `https://explorer.solana.com/tx/${response.signature}`,
+        explorerUrl,
         imageUri,
         metadataUri,
         newMetadata: metadata,
@@ -144,6 +195,18 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in update-token-metadata function:', error)
+    
+    // Update hijack record with error if we have a record ID
+    if (hijackRecordId) {
+      await supabase
+        .from('token_hijacks')
+        .update({
+          status: 'failed',
+          error_message: error.message
+        })
+        .eq('id', hijackRecordId)
+    }
+
     return new Response(
       JSON.stringify({ 
         error: 'Failed to update token metadata', 

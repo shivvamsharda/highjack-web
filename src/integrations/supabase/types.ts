@@ -9,6 +9,66 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      token_hijacks: {
+        Row: {
+          block_time: number | null
+          created_at: string
+          error_message: string | null
+          explorer_url: string | null
+          id: string
+          image_file_name: string | null
+          image_file_size: number | null
+          image_file_type: string | null
+          image_uri: string | null
+          metadata_uri: string | null
+          new_metadata: Json | null
+          status: string
+          ticker_symbol: string
+          token_name: string
+          transaction_signature: string | null
+          updated_at: string
+          wallet_address: string
+        }
+        Insert: {
+          block_time?: number | null
+          created_at?: string
+          error_message?: string | null
+          explorer_url?: string | null
+          id?: string
+          image_file_name?: string | null
+          image_file_size?: number | null
+          image_file_type?: string | null
+          image_uri?: string | null
+          metadata_uri?: string | null
+          new_metadata?: Json | null
+          status?: string
+          ticker_symbol: string
+          token_name: string
+          transaction_signature?: string | null
+          updated_at?: string
+          wallet_address: string
+        }
+        Update: {
+          block_time?: number | null
+          created_at?: string
+          error_message?: string | null
+          explorer_url?: string | null
+          id?: string
+          image_file_name?: string | null
+          image_file_size?: number | null
+          image_file_type?: string | null
+          image_uri?: string | null
+          metadata_uri?: string | null
+          new_metadata?: Json | null
+          status?: string
+          ticker_symbol?: string
+          token_name?: string
+          transaction_signature?: string | null
+          updated_at?: string
+          wallet_address?: string
+        }
+        Relationships: []
+      }
       wallet_connections: {
         Row: {
           connected_at: string
