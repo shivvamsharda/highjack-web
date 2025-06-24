@@ -7,7 +7,6 @@ import {
   PhantomWalletAdapter,
   SolflareWalletAdapter,
 } from '@solana/wallet-adapter-wallets';
-import { clusterApiUrl } from '@solana/web3.js';
 
 // Import wallet adapter CSS
 import '@solana/wallet-adapter-react-ui/styles.css';
@@ -20,7 +19,13 @@ const SolanaWalletProvider: React.FC<SolanaWalletProviderProps> = ({ children })
   // Use mainnet for production - this is where real SOL transactions happen
   const network = WalletAdapterNetwork.Mainnet;
   
-  const endpoint = useMemo(() => clusterApiUrl(network), [network]);
+  // Use a reliable RPC endpoint instead of the public rate-limited one
+  // This should match the RPC_URL used in the Supabase edge function
+  const endpoint = useMemo(() => {
+    // Using Helius free tier as a more reliable option than the public RPC
+    // You can replace this with your preferred RPC provider (QuickNode, Alchemy, etc.)
+    return 'https://mainnet.helius-rpc.com/?api-key=public';
+  }, []);
   
   const wallets = useMemo(
     () => [
