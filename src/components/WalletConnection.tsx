@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
@@ -13,13 +12,15 @@ interface WalletConnectionProps {
   walletAddress: string | null;
   onConnect: () => void;
   onDisconnect: () => void;
+  compact?: boolean;
 }
 
 const WalletConnection: React.FC<WalletConnectionProps> = ({
   isConnected: legacyIsConnected,
   walletAddress: legacyWalletAddress,
   onConnect: legacyOnConnect,
-  onDisconnect: legacyOnDisconnect
+  onDisconnect: legacyOnDisconnect,
+  compact = false
 }) => {
   const { publicKey, wallet, connect, disconnect, connecting } = useWallet();
   const { saveWalletConnection, disconnectWallet, isLoading } = useWalletDatabase();
@@ -104,6 +105,43 @@ const WalletConnection: React.FC<WalletConnectionProps> = ({
     }
   };
 
+  // Compact version for header
+  if (compact) {
+    if (isConnected && walletAddress) {
+      return (
+        <div className="flex items-center gap-2 bg-card/80 backdrop-blur-sm border border-primary/30 rounded-lg px-3 py-2 glow-red">
+          <CheckCircle className="w-4 h-4 text-green-400" />
+          <span className="text-sm font-medium text-foreground">
+            {truncateAddress(walletAddress)}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleDisconnect}
+            disabled={isLoading || isDisconnecting}
+            className="h-6 px-2 text-xs border-primary/30 hover:bg-primary/10"
+          >
+            {isDisconnecting ? '...' : 'Disconnect'}
+          </Button>
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex items-center">
+        <WalletMultiButton 
+          className="!bg-primary !text-primary-foreground !font-medium !py-2 !px-4 !text-sm !rounded-lg glow-red !transition-all !duration-300 hover:glow-red-intense"
+        />
+        {connecting && (
+          <div className="ml-2 text-primary text-xs animate-pulse">
+            Connecting...
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Full version for main layout (keep existing full implementation)
   if (isConnected && walletAddress) {
     return (
       <Card className="bg-card/80 backdrop-blur-sm border-primary/30 glow-red animate-slide-up">

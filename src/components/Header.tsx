@@ -1,10 +1,35 @@
 
 import React from 'react';
+import WalletConnection from './WalletConnection';
 
-const Header: React.FC = () => {
+interface HeaderProps {
+  isWalletConnected: boolean;
+  walletAddress: string | null;
+  onConnect: () => void;
+  onDisconnect: () => void;
+}
+
+const Header: React.FC<HeaderProps> = ({
+  isWalletConnected,
+  walletAddress,
+  onConnect,
+  onDisconnect
+}) => {
   return (
-    <header className="text-center mb-12 md:mb-16 animate-slide-up">
-      <div className="max-w-4xl mx-auto px-4">
+    <header className="text-center mb-8 md:mb-12 animate-slide-up relative">
+      <div className="max-w-7xl mx-auto px-4">
+        {/* Wallet Connection - Top Right */}
+        <div className="absolute top-0 right-4 z-10">
+          <WalletConnection
+            isConnected={isWalletConnected}
+            walletAddress={walletAddress}
+            onConnect={onConnect}
+            onDisconnect={onDisconnect}
+            compact={true}
+          />
+        </div>
+
+        {/* Main Header Content */}
         <div className="flex flex-col sm:flex-row items-center justify-center mb-8 gap-4 sm:gap-6">
           <div className="relative flex-shrink-0">
             <img 
