@@ -24,25 +24,36 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8">
-        <Header />
-        
-        <div className="max-w-2xl mx-auto space-y-8">
-          <WalletConnection
-            isConnected={isWalletConnected}
-            walletAddress={walletAddress}
-            onConnect={handleWalletConnect}
-            onDisconnect={handleWalletDisconnect}
-          />
+      <div className="main-content">
+        <div className="container mx-auto px-4 py-8 max-w-6xl">
+          <Header />
           
-          <HijackForm isConnected={isWalletConnected} />
-        </div>
+          <div className="max-w-4xl mx-auto space-y-8">
+            <WalletConnection
+              isConnected={isWalletConnected}
+              walletAddress={walletAddress}
+              onConnect={handleWalletConnect}
+              onDisconnect={handleWalletDisconnect}
+            />
+            
+            <HijackForm isConnected={isWalletConnected} />
+          </div>
 
-        <footer className="text-center mt-16 text-muted-foreground">
-          <p className="text-sm">
-            Built for degens, by degens. Use responsibly. 🏴‍☠️
-          </p>
-        </footer>
+          <footer className="text-center mt-20 text-muted-foreground animate-slide-up">
+            <div className="space-y-2">
+              <p className="text-sm">
+                Built for degens, by degens. Use responsibly. 🏴‍☠️
+              </p>
+              <div className="flex items-center justify-center gap-4 text-xs">
+                <span>⚡ Powered by Solana</span>
+                <span>•</span>
+                <span>🔥 Zero compromises</span>
+                <span>•</span>
+                <span>💀 Maximum chaos</span>
+              </div>
+            </div>
+          </footer>
+        </div>
       </div>
     </div>
   );

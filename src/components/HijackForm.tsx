@@ -2,10 +2,12 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Upload, Zap, AlertCircle, CheckCircle } from 'lucide-react';
+import { Zap, AlertCircle, Lock, Unlock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import FloatingLabelInput from './FloatingLabelInput';
+import DragDropZone from './DragDropZone';
+import MetadataPreview from './MetadataPreview';
+import SuccessModal from './SuccessModal';
 
 interface HijackFormProps {
   isConnected: boolean;
@@ -17,19 +19,16 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
   const { toast } = useToast();
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setImageFile(file);
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setImagePreview(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
+  const handleImageUpload = (file: File) => {
+    setImageFile(file);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setImagePreview(e.target?.result as string);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -38,7 +37,7 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
     if (!tokenName || !ticker || !imageFile) {
       toast({
         title: "Missing Information",
-        description: "Please fill in all fields and upload an image.",
+        description: "Fill all fields to complete the hijack.",
         variant: "destructive",
       });
       return;
@@ -47,34 +46,24 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
     setIsSubmitting(true);
 
     try {
-      // Simulate payment process
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Simulate payment and metadata update
+      await new Promise(resolve => setTimeout(resolve, 3000));
       
-      // Simulate random success/failure for demo
-      const success = Math.random() > 0.3;
+      const success = Math.random() > 0.2; // 80% success rate
       
       if (success) {
-        setPaymentSuccess(true);
+        setShowSuccess(true);
         toast({
-          title: "Hijack Successful! 🎯",
-          description: "Token metadata has been updated successfully.",
+          title: "Hijack Complete! 🎯",
+          description: "Token metadata updated successfully.",
         });
-        
-        // Reset form after success
-        setTimeout(() => {
-          setTokenName('');
-          setTicker('');
-          setImageFile(null);
-          setImagePreview(null);
-          setPaymentSuccess(false);
-        }, 3000);
       } else {
         throw new Error("Transaction failed");
       }
     } catch (error) {
       toast({
         title: "Hijack Failed",
-        description: "Transaction failed. Please try again.",
+        description: "Transaction failed. Your SOL is safe.",
         variant: "destructive",
       });
     } finally {
@@ -82,131 +71,131 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
     }
   };
 
+  const handleSuccessClose = () => {
+    setShowSuccess(false);
+    // Reset form
+    setTokenName('');
+    setTicker('');
+    setImageFile(null);
+    setImagePreview(null);
+  };
+
   const isFormValid = tokenName && ticker && imageFile && isConnected;
+  const LockIcon = isFormValid ? Unlock : Lock;
 
   return (
-    <Card className={`bg-card border-border transition-all duration-300 ${isConnected ? 'border-primary/30 glow-red' : 'opacity-60'}`}>
-      <CardHeader>
-        <CardTitle className="text-2xl flex items-center gap-2 text-glow">
-          <Zap className="w-6 h-6 text-primary" />
-          Hijack Token Metadata
-        </CardTitle>
-        <p className="text-muted-foreground">
-          Pay 0.1 SOL to take control of the token's identity
-        </p>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <Label htmlFor="tokenName" className="text-foreground font-medium">
-              New Token Name
-            </Label>
-            <Input
-              id="tokenName"
-              value={tokenName}
-              onChange={(e) => setTokenName(e.target.value)}
-              placeholder="Enter new token name..."
-              disabled={!isConnected}
-              className="mt-2 bg-input border-border focus:border-primary focus:ring-primary"
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="ticker" className="text-foreground font-medium">
-              New Ticker Symbol
-            </Label>
-            <Input
-              id="ticker"
-              value={ticker}
-              onChange={(e) => setTicker(e.target.value.toUpperCase())}
-              placeholder="TICK"
-              maxLength={10}
-              disabled={!isConnected}
-              className="mt-2 bg-input border-border focus:border-primary focus:ring-primary"
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="image" className="text-foreground font-medium">
-              New Profile Picture
-            </Label>
-            <div className="mt-2">
-              <label
-                htmlFor="image"
-                className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
-                  isConnected 
-                    ? 'border-primary/50 hover:border-primary bg-input hover:bg-input/80' 
-                    : 'border-border bg-muted cursor-not-allowed'
-                }`}
-              >
-                {imagePreview ? (
-                  <img
-                    src={imagePreview}
-                    alt="Preview"
-                    className="w-full h-full object-cover rounded-lg"
-                  />
-                ) : (
-                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                    <Upload className="w-8 h-8 mb-4 text-muted-foreground" />
-                    <p className="mb-2 text-sm text-muted-foreground">
-                      <span className="font-semibold">Click to upload</span>
-                    </p>
-                    <p className="text-xs text-muted-foreground">PNG, JPG or GIF</p>
-                  </div>
-                )}
-                <input
-                  id="image"
-                  type="file"
-                  className="hidden"
-                  accept="image/*"
-                  onChange={handleImageUpload}
+    <>
+      <div className={`space-y-6 transition-all duration-500 ${isConnected ? 'animate-slide-up' : 'opacity-60'}`}>
+        <Card className={`bg-card/80 backdrop-blur-sm border-border transition-all duration-300 ${isConnected ? 'border-primary/30 glow-red' : ''}`}>
+          <CardHeader>
+            <CardTitle className="text-3xl flex items-center gap-3 text-glow font-space-grotesk">
+              <Zap className="w-8 h-8 text-primary animate-pulse" />
+              Hijack Token Metadata
+            </CardTitle>
+            <p className="text-muted-foreground text-lg">
+              Steal the billboard. Make it yours. Leave your mark on-chain.
+            </p>
+          </CardHeader>
+          
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FloatingLabelInput
+                  id="tokenName"
+                  label="New Token Name"
+                  value={tokenName}
+                  onChange={setTokenName}
+                  placeholder="Enter the new identity..."
                   disabled={!isConnected}
                 />
-              </label>
-            </div>
-          </div>
 
-          <div className="bg-secondary/50 p-4 rounded-lg border border-primary/20">
-            <div className="flex items-center gap-2 text-primary mb-2">
-              <AlertCircle className="w-4 h-4" />
-              <span className="font-medium">Payment Required</span>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              This action requires a payment of <span className="text-primary font-semibold">0.1 SOL</span> to update the token metadata.
-            </p>
-          </div>
+                <FloatingLabelInput
+                  id="ticker"
+                  label="New Ticker Symbol"
+                  value={ticker}
+                  onChange={setTicker}
+                  placeholder="SYMBOL"
+                  maxLength={10}
+                  disabled={!isConnected}
+                  transform={(value) => value.toUpperCase()}
+                />
+              </div>
 
-          <Button
-            type="submit"
-            disabled={!isFormValid || isSubmitting}
-            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-3 text-lg transition-all duration-300 glow-red hover:glow-red-intense disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isSubmitting ? (
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                Processing Payment...
+              <div>
+                <label className="block text-foreground font-medium text-lg mb-3">
+                  New Profile Picture
+                </label>
+                <DragDropZone
+                  onFileUpload={handleImageUpload}
+                  imagePreview={imagePreview}
+                  disabled={!isConnected}
+                />
               </div>
-            ) : paymentSuccess ? (
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-5 h-5" />
-                Hijack Complete!
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <Zap className="w-5 h-5" />
-                Hijack This Token (0.1 SOL)
-              </div>
-            )}
-          </Button>
 
-          {!isConnected && (
-            <p className="text-center text-sm text-muted-foreground">
-              Connect your wallet to start hijacking
-            </p>
-          )}
-        </form>
-      </CardContent>
-    </Card>
+              <MetadataPreview
+                tokenName={tokenName}
+                ticker={ticker}
+                imagePreview={imagePreview}
+              />
+
+              <div className="bg-secondary/30 p-6 rounded-lg border border-primary/20 neon-red">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="w-6 h-6 text-primary mt-1 animate-pulse" />
+                  <div>
+                    <div className="text-primary font-bold text-lg mb-2">
+                      ⚡ Payment Required
+                    </div>
+                    <p className="text-muted-foreground">
+                      This hijack costs <span className="text-primary font-bold text-lg">0.1 SOL</span> to 
+                      overwrite the token metadata permanently on-chain.
+                    </p>
+                    <div className="text-xs text-muted-foreground mt-2">
+                      • Non-refundable • Instant execution • Degen approved
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <Button
+                type="submit"
+                disabled={!isFormValid || isSubmitting}
+                className={`w-full h-16 text-xl font-bold transition-all duration-300 button-unlock ${
+                  isFormValid 
+                    ? 'bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 glow-red hover:glow-red-intense animate-glow-pulse' 
+                    : 'bg-secondary border border-border'
+                } ${isSubmitting ? 'animate-unlock' : ''}`}
+              >
+                {isSubmitting ? (
+                  <div className="flex items-center gap-3">
+                    <div className="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                    Processing Payment...
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-3">
+                    <LockIcon className="w-6 h-6" />
+                    🔓 Pay 0.1 SOL to Hijack
+                  </div>
+                )}
+              </Button>
+
+              {!isConnected && (
+                <p className="text-center text-muted-foreground">
+                  Connect your wallet above to start the hijack
+                </p>
+              )}
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+
+      <SuccessModal
+        isOpen={showSuccess}
+        onClose={handleSuccessClose}
+        tokenName={tokenName}
+        ticker={ticker}
+        imagePreview={imagePreview}
+      />
+    </>
   );
 };
 
