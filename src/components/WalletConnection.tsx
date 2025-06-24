@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Wallet, Zap, CheckCircle } from 'lucide-react';
 
 interface WalletConnectionProps {
@@ -17,6 +18,7 @@ const WalletConnection: React.FC<WalletConnectionProps> = ({
   onConnect,
   onDisconnect
 }) => {
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [hoveredWallet, setHoveredWallet] = useState<string | null>(null);
 
   const wallets = [
@@ -27,6 +29,12 @@ const WalletConnection: React.FC<WalletConnectionProps> = ({
 
   const truncateAddress = (address: string) => {
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  };
+
+  const handleWalletSelect = (walletName: string) => {
+    console.log(`Selected wallet: ${walletName}`);
+    onConnect();
+    setIsDialogOpen(false);
   };
 
   if (isConnected && walletAddress) {
@@ -74,31 +82,42 @@ const WalletConnection: React.FC<WalletConnectionProps> = ({
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
-          {wallets.map((wallet) => (
-            <div
-              key={wallet.name}
-              className={`flex items-center justify-center gap-2 p-3 rounded-lg border transition-all duration-300 cursor-pointer ${
-                hoveredWallet === wallet.name
-                  ? 'border-primary bg-primary/10 glow-red-intense'
-                  : 'border-border bg-secondary/30'
-              }`}
-              onMouseEnter={() => setHoveredWallet(wallet.name)}
-              onMouseLeave={() => setHoveredWallet(null)}
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button
+              className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-bold py-4 text-lg glow-red transition-all duration-300 hover:glow-red-intense button-unlock animate-glow-pulse"
             >
-              <span className="text-2xl">{wallet.icon}</span>
-              <span className="font-medium text-sm">{wallet.name}</span>
+              <Wallet className="w-6 h-6 mr-3" />
+              Connect Wallet
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="bg-card/95 backdrop-blur-sm border-primary/30 glow-red">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-space-grotesk text-center mb-4">
+                Select Your Wallet
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3">
+              {wallets.map((wallet) => (
+                <Button
+                  key={wallet.name}
+                  variant="outline"
+                  className={`w-full justify-start gap-3 p-4 text-lg transition-all duration-300 ${
+                    hoveredWallet === wallet.name
+                      ? 'border-primary bg-primary/10 glow-red-intense'
+                      : 'border-border bg-secondary/30 hover:border-primary/50'
+                  }`}
+                  onMouseEnter={() => setHoveredWallet(wallet.name)}
+                  onMouseLeave={() => setHoveredWallet(null)}
+                  onClick={() => handleWalletSelect(wallet.name)}
+                >
+                  <span className="text-2xl">{wallet.icon}</span>
+                  <span className="font-medium">{wallet.name}</span>
+                </Button>
+              ))}
             </div>
-          ))}
-        </div>
-        
-        <Button
-          onClick={onConnect}
-          className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-bold py-4 text-lg glow-red transition-all duration-300 hover:glow-red-intense button-unlock animate-glow-pulse"
-        >
-          <Wallet className="w-6 h-6 mr-3" />
-          Connect Wallet
-        </Button>
+          </DialogContent>
+        </Dialog>
         
         <p className="text-xs text-muted-foreground text-center mt-4">
           Secure connection • No private keys stored
