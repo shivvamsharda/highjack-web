@@ -62,7 +62,7 @@ const Header: React.FC<HeaderProps> = ({
         </p>
         
         <div className="flex items-center justify-center gap-3 md:gap-6 flex-wrap">
-          <div className="neon-red px-4 md:px-6 py-2 md:py-3 rounded-full animate-glow-pulse">
+          <div className="neon-red px-4 md:px-6 py-2 md:py-3 rounded-full">
             <span className="text-primary font-bold flex items-center gap-2 text-sm md:text-base animate-flicker">
               🔥 Degen Mode: ON
             </span>
@@ -75,7 +75,7 @@ const Header: React.FC<HeaderProps> = ({
           <Button
             variant="ghost"
             onClick={scrollToRecentHijacks}
-            className="bg-secondary/50 px-3 md:px-4 py-1 md:py-2 rounded-full border border-primary/20 hover:border-primary/40 hover:bg-secondary/70 transition-all duration-300"
+            className="bg-secondary/50 px-3 md:px-4 py-1 md:py-2 rounded-full border border-primary/20 hover:border-primary/40 hover:bg-secondary/70 transition-all duration-300 glow-red animate-glow-pulse"
           >
             <span className="text-xs md:text-sm text-muted-foreground hover:text-foreground">
               🏴‍☠️ Recent Hijacks
