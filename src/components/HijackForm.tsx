@@ -22,7 +22,9 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [transactionSignature, setTransactionSignature] = useState<string>('');
+  const [updateTransactionSignature, setUpdateTransactionSignature] = useState<string>('');
   const [explorerUrl, setExplorerUrl] = useState<string>('');
+  const [updateExplorerUrl, setUpdateExplorerUrl] = useState<string>('');
   const { toast } = useToast();
 
   const { updateTokenMetadata, isUpdating, progress } = useTokenMetadata();
@@ -66,7 +68,9 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
 
     if (result.success && result.transactionSignature) {
       setTransactionSignature(result.transactionSignature);
+      setUpdateTransactionSignature(result.updateTransactionSignature || '');
       setExplorerUrl(result.explorerUrl || '');
+      setUpdateExplorerUrl(result.updateExplorerUrl || '');
       setShowSuccess(true);
     }
   };
@@ -79,7 +83,9 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
     setImageFile(null);
     setImagePreview(null);
     setTransactionSignature('');
+    setUpdateTransactionSignature('');
     setExplorerUrl('');
+    setUpdateExplorerUrl('');
   };
 
   const isFormValid = tokenName && ticker && imageFile && isConnected;
@@ -217,7 +223,9 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
         ticker={ticker}
         imagePreview={imagePreview}
         transactionSignature={transactionSignature}
+        updateTransactionSignature={updateTransactionSignature}
         explorerUrl={explorerUrl}
+        updateExplorerUrl={updateExplorerUrl}
       />
     </>
   );

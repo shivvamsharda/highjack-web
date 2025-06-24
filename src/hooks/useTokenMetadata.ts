@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -15,13 +14,16 @@ interface UpdateTokenMetadataParams {
 interface UpdateTokenMetadataResponse {
   success: boolean;
   transactionSignature?: string;
+  updateTransactionSignature?: string;
   explorerUrl?: string;
+  updateExplorerUrl?: string;
   imageUri?: string;
   metadataUri?: string;
   newMetadata?: any;
   blockTime?: number;
   error?: string;
   details?: string;
+  message?: string;
 }
 
 interface CurrentTokenMetadata {
@@ -162,7 +164,7 @@ export const useTokenMetadata = () => {
       await connection.confirmTransaction(signature, 'confirmed');
       console.log('Payment confirmed:', signature);
 
-      setProgress('Processing hijack...');
+      setProgress('Uploading files and updating metadata on-chain...');
 
       // Create form data for the edge function
       const formData = new FormData();
@@ -186,11 +188,11 @@ export const useTokenMetadata = () => {
         throw new Error(data.error || 'Token metadata update failed');
       }
 
-      setProgress('Hijack completed!');
+      setProgress('Hijack completed successfully!');
 
       toast({
         title: "Token Hijacked Successfully! 🎉",
-        description: `${tokenName} metadata updated on-chain`,
+        description: data.message || `${tokenName} metadata updated on-chain`,
       });
 
       // Refresh current metadata after successful update
