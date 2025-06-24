@@ -6,6 +6,7 @@ import { createUmi } from 'https://esm.sh/@metaplex-foundation/umi-bundle-defaul
 import { createSignerFromKeypair, signerIdentity } from 'https://esm.sh/@metaplex-foundation/umi@0.9.2'
 import { updateV1, fetchMetadataFromSeeds } from 'https://esm.sh/@metaplex-foundation/mpl-token-metadata@3.2.1'
 import { publicKey } from 'https://esm.sh/@metaplex-foundation/umi@0.9.2'
+import bs58 from 'https://esm.sh/bs58@5.0.0'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -22,9 +23,6 @@ serve(async (req) => {
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!
   const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
   const supabase = createClient(supabaseUrl, supabaseServiceKey)
-
-  // Import bs58 once at the top level to avoid conflicts
-  const bs58 = await import('https://esm.sh/bs58@5.0.0')
 
   let hijackRecordId: string | null = null
 
@@ -189,7 +187,7 @@ serve(async (req) => {
         const keyArray = JSON.parse(walletKeyStr)
         privateKeyBytes = new Uint8Array(keyArray)
       } else {
-        // Assume base58 format - use the single bs58 instance
+        // Assume base58 format - use bs58 library
         privateKeyBytes = bs58.decode(walletKeyStr)
       }
       updateAuthorityKeypair = Keypair.fromSecretKey(privateKeyBytes)
@@ -330,7 +328,7 @@ serve(async (req) => {
       },
     }).sendAndConfirm(umi)
 
-    // Convert the signature to base58 string using the single bs58 instance
+    // Convert the signature to base58 string using bs58
     const updateTransactionSignatureString = bs58.encode(updateResult.signature)
     
     console.log('Metadata update transaction signature:', updateTransactionSignatureString)
