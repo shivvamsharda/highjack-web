@@ -153,4 +153,25 @@
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     background: rgba(239, 68, 68, 0.7);
   }
+
+  /* Override Solana Wallet Adapter styles */
+  .wallet-adapter-button {
+    background-color: hsl(4 84% 57%) !important;
+    color: hsl(0 0% 98%) !important;
+    border: none !important;
+  }
+
+  .wallet-adapter-button:not([disabled]):hover {
+    background-color: hsl(4 84% 52%) !important;
+  }
+
+  .wallet-adapter-button-trigger {
+    background-color: hsl(4 84% 57%) !important;
+    color: hsl(0 0% 98%) !important;
+    border: none !important;
+  }
+
+  .wallet-adapter-button-trigger:not([disabled]):hover {
+    background-color: hsl(4 84% 52%) !important;
+  }
 }
