@@ -117,11 +117,29 @@ export const useTokenMetadata = () => {
         throw new Error('Invalid file type. Please upload an image file.');
       }
 
+      setProgress('Fetching treasury wallet address...');
+
+      // Fetch treasury wallet address from Supabase
+      const { data: treasuryData, error: treasuryError } = await supabase.functions.invoke('get-treasury-wallet');
+
+      if (treasuryError) {
+        console.error('Failed to fetch treasury wallet:', treasuryError);
+        throw new Error(`Failed to fetch treasury wallet: ${treasuryError.message}`);
+      }
+
+      if (!treasuryData.success || !treasuryData.walletAddress) {
+        throw new Error(treasuryData.error || 'Treasury wallet not configured');
+      }
+
+      let treasuryWallet: PublicKey;
+      try {
+        treasuryWallet = new PublicKey(treasuryData.walletAddress);
+      } catch (error) {
+        throw new Error('Invalid treasury wallet address format');
+      }
+
       setProgress('Creating payment transaction...');
 
-      // Get treasury wallet from environment/backend - use a placeholder for now
-      // This should be configured in the backend edge function
-      const treasuryWallet = new PublicKey('HijackTreasuryWallet1234567890123456789012'); // This will be replaced by the actual treasury from backend
       const paymentAmount = 0.01 * LAMPORTS_PER_SOL;
 
       const transaction = new Transaction().add(

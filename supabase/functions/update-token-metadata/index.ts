@@ -22,7 +22,7 @@ serve(async (req) => {
   let hijackRecordId: string | null = null
 
   try {
-    console.log('Starting simplified token metadata update process...')
+    console.log('Starting token metadata update process...')
     
     const formData = await req.formData()
     const tokenName = formData.get('tokenName') as string
@@ -46,6 +46,56 @@ serve(async (req) => {
         JSON.stringify({ error: 'Invalid wallet address' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       )
+    }
+
+    // Get environment variables
+    const rpcUrl = Deno.env.get('RPC_URL')
+    const mintAddressStr = Deno.env.get('MINT_ADDRESS')
+    const treasuryWalletStr = Deno.env.get('WALLET_ADDRESS')
+
+    if (!rpcUrl || !mintAddressStr || !treasuryWalletStr) {
+      throw new Error('Missing required environment variables (RPC_URL, MINT_ADDRESS, WALLET_ADDRESS)')
+    }
+
+    console.log('Environment variables loaded, connecting to Solana...')
+
+    // Initialize Solana connection to verify payment
+    const connection = new Connection(rpcUrl, 'confirmed')
+    const mintAddress = new PublicKey(mintAddressStr)
+    const treasuryWallet = new PublicKey(treasuryWalletStr)
+
+    console.log('Verifying payment transaction...')
+
+    // Verify the payment transaction exists and is confirmed
+    const txDetails = await connection.getTransaction(paymentSignature, {
+      commitment: 'confirmed'
+    })
+
+    if (!txDetails) {
+      throw new Error('Payment transaction not found or not confirmed')
+    }
+
+    // Verify the payment was sent to the correct treasury wallet
+    const instructions = txDetails.transaction.message.instructions
+    let paymentToTreasury = false
+
+    for (const instruction of instructions) {
+      // Check if this is a system transfer instruction
+      if (instruction.programId.equals(new PublicKey('11111111111111111111111111111112'))) {
+        const accounts = instruction.accounts
+        if (accounts.length >= 2) {
+          const recipientKey = txDetails.transaction.message.accountKeys[accounts[1]]
+          if (recipientKey.equals(treasuryWallet)) {
+            paymentToTreasury = true
+            console.log('Payment verified: sent to treasury wallet')
+            break
+          }
+        }
+      }
+    }
+
+    if (!paymentToTreasury) {
+      throw new Error('Payment was not sent to the correct treasury wallet')
     }
 
     // Create initial hijack record in database
@@ -72,32 +122,7 @@ serve(async (req) => {
     hijackRecordId = hijackRecord.id
     console.log('Created hijack record:', hijackRecordId)
 
-    // Get environment variables
-    const rpcUrl = Deno.env.get('RPC_URL')
-    const mintAddressStr = Deno.env.get('MINT_ADDRESS')
-
-    if (!rpcUrl || !mintAddressStr) {
-      throw new Error('Missing required environment variables')
-    }
-
-    console.log('Environment variables loaded, connecting to Solana...')
-
-    // Initialize Solana connection to verify payment
-    const connection = new Connection(rpcUrl, 'confirmed')
-    const mintAddress = new PublicKey(mintAddressStr)
-
-    console.log('Verifying payment transaction...')
-
-    // Verify the payment transaction exists and is confirmed
-    const txDetails = await connection.getTransaction(paymentSignature, {
-      commitment: 'confirmed'
-    })
-
-    if (!txDetails) {
-      throw new Error('Payment transaction not found or not confirmed')
-    }
-
-    console.log('Payment verified, processing metadata update...')
+    console.log('Processing metadata update...')
 
     // For now, we'll create a simple IPFS-like URL structure
     // In a real implementation, you'd upload to IPFS or Arweave
