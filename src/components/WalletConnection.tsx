@@ -1,9 +1,12 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useWallet } from '@solana/wallet-adapter-react';
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Wallet, Zap, CheckCircle } from 'lucide-react';
+import { Wallet, Zap, CheckCircle, AlertCircle } from 'lucide-react';
+import { useWalletDatabase } from '@/hooks/useWalletDatabase';
 
 interface WalletConnectionProps {
   isConnected: boolean;
@@ -13,28 +16,72 @@ interface WalletConnectionProps {
 }
 
 const WalletConnection: React.FC<WalletConnectionProps> = ({
-  isConnected,
-  walletAddress,
-  onConnect,
-  onDisconnect
+  isConnected: legacyIsConnected,
+  walletAddress: legacyWalletAddress,
+  onConnect: legacyOnConnect,
+  onDisconnect: legacyOnDisconnect
 }) => {
+  const { publicKey, wallet, connect, disconnect, connecting } = useWallet();
+  const { saveWalletConnection, disconnectWallet, isLoading } = useWalletDatabase();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [hoveredWallet, setHoveredWallet] = useState<string | null>(null);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
 
-  const wallets = [
-    { name: 'Phantom', icon: '👻' },
-    { name: 'Backpack', icon: '🎒' },
-    { name: 'Solflare', icon: '☀️' }
-  ];
+  const isConnected = !!publicKey;
+  const walletAddress = publicKey?.toBase58() || null;
+
+  // Handle wallet connection changes
+  useEffect(() => {
+    if (publicKey && wallet) {
+      const handleWalletConnected = async () => {
+        const walletType = wallet.adapter.name.toLowerCase();
+        const success = await saveWalletConnection(publicKey.toBase58(), walletType);
+        if (success) {
+          legacyOnConnect(); // Update legacy state
+          setIsDialogOpen(false);
+          setConnectionError(null);
+        }
+      };
+      
+      handleWalletConnected();
+    } else if (!publicKey && legacyIsConnected) {
+      // Wallet was disconnected
+      legacyOnDisconnect();
+    }
+  }, [publicKey, wallet, saveWalletConnection, legacyOnConnect, legacyOnDisconnect, legacyIsConnected]);
+
+  const handleConnect = async () => {
+    try {
+      setConnectionError(null);
+      await connect();
+    } catch (error) {
+      console.error('Connection failed:', error);
+      setConnectionError(error instanceof Error ? error.message : 'Connection failed');
+    }
+  };
+
+  const handleDisconnect = async () => {
+    try {
+      if (walletAddress) {
+        await disconnectWallet(walletAddress);
+      }
+      await disconnect();
+      legacyOnDisconnect();
+    } catch (error) {
+      console.error('Disconnection failed:', error);
+    }
+  };
 
   const truncateAddress = (address: string) => {
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
   };
 
-  const handleWalletSelect = (walletName: string) => {
-    console.log(`Selected wallet: ${walletName}`);
-    onConnect();
-    setIsDialogOpen(false);
+  const getWalletIcon = (walletName: string) => {
+    switch (walletName.toLowerCase()) {
+      case 'phantom': return '👻';
+      case 'solflare': return '☀️';
+      case 'backpack': return '🎒';
+      default: return '🪙';
+    }
   };
 
   if (isConnected && walletAddress) {
@@ -45,7 +92,10 @@ const WalletConnection: React.FC<WalletConnectionProps> = ({
             <div className="flex items-center gap-3">
               <CheckCircle className="w-6 h-6 text-green-400 animate-pulse" />
               <div>
-                <div className="text-sm text-green-400 font-medium">✅ Connected</div>
+                <div className="text-sm text-green-400 font-medium flex items-center gap-2">
+                  <span>{getWalletIcon(wallet?.adapter.name || '')}</span>
+                  ✅ {wallet?.adapter.name} Connected
+                </div>
                 <div className="text-lg font-bold text-foreground">
                   {truncateAddress(walletAddress)}
                 </div>
@@ -58,10 +108,11 @@ const WalletConnection: React.FC<WalletConnectionProps> = ({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={onDisconnect}
+                onClick={handleDisconnect}
+                disabled={isLoading}
                 className="border-primary/30 hover:bg-primary/10 transition-all duration-300"
               >
-                Disconnect
+                {isLoading ? 'Disconnecting...' : 'Disconnect'}
               </Button>
             </div>
           </div>
@@ -82,42 +133,24 @@ const WalletConnection: React.FC<WalletConnectionProps> = ({
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button
-              className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-bold py-4 text-lg glow-red transition-all duration-300 hover:glow-red-intense button-unlock animate-glow-pulse"
-            >
-              <Wallet className="w-6 h-6 mr-3" />
-              Connect Wallet
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="bg-card/95 backdrop-blur-sm border-primary/30 glow-red">
-            <DialogHeader>
-              <DialogTitle className="text-2xl font-space-grotesk text-center mb-4">
-                Select Your Wallet
-              </DialogTitle>
-            </DialogHeader>
-            <div className="space-y-3">
-              {wallets.map((wallet) => (
-                <Button
-                  key={wallet.name}
-                  variant="outline"
-                  className={`w-full justify-start gap-3 p-4 text-lg transition-all duration-300 ${
-                    hoveredWallet === wallet.name
-                      ? 'border-primary bg-primary/10 glow-red-intense'
-                      : 'border-border bg-secondary/30 hover:border-primary/50'
-                  }`}
-                  onMouseEnter={() => setHoveredWallet(wallet.name)}
-                  onMouseLeave={() => setHoveredWallet(null)}
-                  onClick={() => handleWalletSelect(wallet.name)}
-                >
-                  <span className="text-2xl">{wallet.icon}</span>
-                  <span className="font-medium">{wallet.name}</span>
-                </Button>
-              ))}
+        <div className="flex flex-col items-center gap-4">
+          <WalletMultiButton 
+            className="!bg-gradient-to-r !from-primary !to-primary/80 hover:!from-primary/90 hover:!to-primary/70 !text-primary-foreground !font-bold !py-4 !text-lg !px-8 !rounded-md glow-red !transition-all !duration-300 hover:glow-red-intense button-unlock animate-glow-pulse"
+          />
+          
+          {connectionError && (
+            <div className="flex items-center gap-2 text-red-400 text-sm">
+              <AlertCircle className="w-4 h-4" />
+              <span>{connectionError}</span>
             </div>
-          </DialogContent>
-        </Dialog>
+          )}
+          
+          {connecting && (
+            <div className="text-primary text-sm animate-pulse">
+              Connecting to wallet...
+            </div>
+          )}
+        </div>
         
         <p className="text-xs text-muted-foreground text-center mt-4">
           Secure connection • No private keys stored
