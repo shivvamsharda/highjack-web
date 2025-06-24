@@ -1,11 +1,12 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
-import { Connection, PublicKey, Keypair, SystemProgram } from 'https://esm.sh/@solana/web3.js@1.98.2'
-import { createUmi } from 'https://esm.sh/@metaplex-foundation/umi-bundle-defaults@0.9.2'
-import { createSignerFromKeypair, signerIdentity } from 'https://esm.sh/@metaplex-foundation/umi@0.9.2'
-import { updateV1, fetchMetadataFromSeeds } from 'https://esm.sh/@metaplex-foundation/mpl-token-metadata@3.2.1'
-import { publicKey } from 'https://esm.sh/@metaplex-foundation/umi@0.9.2'
-import bs58 from 'https://esm.sh/bs58@5.0.0'
+import { Connection, PublicKey } from 'https://esm.sh/@solana/web3.js@1.98.2'
+import { validateFormData, validateWalletAddress } from './validation.ts'
+import { checkDuplicateSignature, createHijackRecord, updateHijackRecordSuccess, updateHijackRecordError } from './database.ts'
+import { verifyPaymentTransaction } from './payment-verification.ts'
+import { uploadImageAndMetadata } from './storage.ts'
+import { createKeypairFromPrivateKey, updateTokenMetadata } from './blockchain.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -29,13 +30,9 @@ serve(async (req) => {
     console.log('Starting real token metadata update process...')
     
     const formData = await req.formData()
-    const tokenName = formData.get('tokenName') as string
-    const ticker = formData.get('ticker') as string
-    const imageFile = formData.get('imageFile') as File
-    const userWalletAddress = formData.get('userWalletAddress') as string
-    const paymentSignature = formData.get('paymentSignature') as string
+    const validatedData = validateFormData(formData)
 
-    if (!tokenName || !ticker || !imageFile || !userWalletAddress || !paymentSignature) {
+    if (!validatedData) {
       return new Response(
         JSON.stringify({ error: 'Missing required fields including payment signature' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
@@ -43,9 +40,7 @@ serve(async (req) => {
     }
 
     // Verify the wallet address is valid
-    try {
-      new PublicKey(userWalletAddress)
-    } catch (error) {
+    if (!validateWalletAddress(validatedData.userWalletAddress)) {
       return new Response(
         JSON.stringify({ error: 'Invalid wallet address' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
@@ -55,20 +50,10 @@ serve(async (req) => {
     console.log('Checking for duplicate transaction signature...')
 
     // Check if transaction signature already exists in database
-    const { data: existingSignature, error: signatureCheckError } = await supabase
-      .from('token_hijacks')
-      .select('transaction_signature')
-      .eq('transaction_signature', paymentSignature)
-      .single()
+    const isDuplicate = await checkDuplicateSignature(supabase, validatedData.paymentSignature)
 
-    if (signatureCheckError && signatureCheckError.code !== 'PGRST116') {
-      // PGRST116 is "not found" error, which is what we expect for new signatures
-      console.error('Error checking for duplicate signature:', signatureCheckError)
-      throw new Error('Failed to verify transaction signature uniqueness')
-    }
-
-    if (existingSignature) {
-      console.log('Duplicate signature detected:', paymentSignature)
+    if (isDuplicate) {
+      console.log('Duplicate signature detected:', validatedData.paymentSignature)
       return new Response(
         JSON.stringify({ 
           success: false,
@@ -96,330 +81,85 @@ serve(async (req) => {
     const mintAddress = new PublicKey(mintAddressStr)
     const treasuryWallet = new PublicKey(treasuryWalletStr)
 
-    console.log('Verifying payment transaction...')
+    // Verify payment transaction
+    const paymentVerification = await verifyPaymentTransaction(
+      connection,
+      validatedData.paymentSignature,
+      validatedData.userWalletAddress,
+      treasuryWallet
+    )
 
-    // Verify the payment transaction exists and is confirmed
-    let txDetails
-    try {
-      txDetails = await connection.getTransaction(paymentSignature, {
-        commitment: 'confirmed'
-      })
-    } catch (error) {
-      console.error('Error fetching transaction:', error)
-      throw new Error('Failed to fetch payment transaction')
-    }
-
-    if (!txDetails) {
-      throw new Error('Payment transaction not found or not confirmed')
-    }
-
-    console.log('Transaction details found, verifying transaction sender...')
-
-    // Verify transaction sender matches provided wallet address
-    const accountKeys = txDetails.transaction.message.accountKeys
-    if (!accountKeys || accountKeys.length === 0) {
-      throw new Error('Invalid transaction: no account keys found')
-    }
-
-    // First account key is always the fee payer (transaction sender)
-    const transactionSender = accountKeys[0]
-    const providedWallet = new PublicKey(userWalletAddress)
-
-    if (!transactionSender.equals(providedWallet)) {
-      console.log('Transaction sender mismatch:')
-      console.log('Transaction sender:', transactionSender.toBase58())
-      console.log('Provided wallet:', providedWallet.toBase58())
-      
+    if (!paymentVerification.isValid) {
       return new Response(
         JSON.stringify({ 
           success: false,
-          error: 'Transaction sender does not match provided wallet address',
+          error: paymentVerification.error,
           details: 'The transaction was not sent from the wallet address you provided'
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 403 }
       )
     }
 
-    console.log('Transaction sender verified successfully')
-    console.log('Verifying payment to treasury...')
-
-    // Improved payment verification logic
-    const instructions = txDetails.transaction.message.instructions
-    let paymentToTreasury = false
-
-    try {
-      for (let i = 0; i < instructions.length; i++) {
-        const instruction = instructions[i]
-        
-        // Get the program ID safely
-        let instructionProgramId: PublicKey | null = null
-        
-        if (instruction && typeof instruction === 'object') {
-          // Try to get programId from the instruction
-          if ('programId' in instruction && instruction.programId) {
-            instructionProgramId = instruction.programId
-          } else if ('programIdIndex' in instruction && typeof instruction.programIdIndex === 'number') {
-            // Get program ID from account keys using the index
-            const accountKeys = txDetails.transaction.message.accountKeys
-            if (accountKeys && accountKeys[instruction.programIdIndex]) {
-              instructionProgramId = accountKeys[instruction.programIdIndex]
-            }
-          }
-        }
-
-        console.log(`Instruction ${i}: programId =`, instructionProgramId?.toBase58() || 'undefined')
-
-        // Check if this is a system transfer instruction
-        if (instructionProgramId && instructionProgramId.equals(SystemProgram.programId)) {
-          console.log('Found system program instruction, checking accounts...')
-          
-          // Get account indices from instruction
-          const accounts = instruction.accounts || []
-          console.log('Instruction accounts:', accounts)
-          
-          if (accounts.length >= 2) {
-            // accounts[1] should be the recipient (to) account
-            const accountKeys = txDetails.transaction.message.accountKeys
-            if (accountKeys && accountKeys[accounts[1]]) {
-              const recipientKey = accountKeys[accounts[1]]
-              console.log('Recipient key:', recipientKey.toBase58())
-              console.log('Treasury key:', treasuryWallet.toBase58())
-              
-              if (recipientKey.equals(treasuryWallet)) {
-                paymentToTreasury = true
-                console.log('Payment verified: sent to treasury wallet')
-                break
-              }
-            }
-          }
-        }
-      }
-    } catch (verificationError) {
-      console.error('Error during payment verification:', verificationError)
-      throw new Error(`Payment verification failed: ${verificationError.message}`)
-    }
-
-    if (!paymentToTreasury) {
-      throw new Error('Payment was not sent to the correct treasury wallet')
-    }
-
     // Create initial hijack record in database
-    const { data: hijackRecord, error: insertError } = await supabase
-      .from('token_hijacks')
-      .insert({
-        wallet_address: userWalletAddress,
-        token_name: tokenName,
-        ticker_symbol: ticker.toUpperCase(),
-        image_file_name: imageFile.name,
-        image_file_size: imageFile.size,
-        image_file_type: imageFile.type,
-        status: 'processing',
-        transaction_signature: paymentSignature
-      })
-      .select()
-      .single()
-
-    if (insertError) {
-      console.error('Error creating hijack record:', insertError)
-      throw new Error('Failed to create hijack record')
-    }
-
+    const hijackRecord = await createHijackRecord(supabase, validatedData)
     hijackRecordId = hijackRecord.id
     console.log('Created hijack record:', hijackRecordId)
 
-    // Initialize Umi for Metaplex operations
-    console.log('Initializing Metaplex Umi...')
-    const umi = createUmi(rpcUrl)
-    
     // Create keypair from private key
-    let updateAuthorityKeypair: Keypair
+    let updateAuthorityKeypair
     try {
-      // Handle both base58 and array formats
-      let privateKeyBytes: Uint8Array
-      if (walletKeyStr.startsWith('[') && walletKeyStr.endsWith(']')) {
-        // Array format: [1,2,3,...]
-        const keyArray = JSON.parse(walletKeyStr)
-        privateKeyBytes = new Uint8Array(keyArray)
-      } else {
-        // Assume base58 format - use bs58 library
-        privateKeyBytes = bs58.decode(walletKeyStr)
-      }
-      updateAuthorityKeypair = Keypair.fromSecretKey(privateKeyBytes)
+      updateAuthorityKeypair = createKeypairFromPrivateKey(walletKeyStr)
     } catch (error) {
       console.error('Error parsing WALLET_KEY:', error)
       throw new Error('Invalid WALLET_KEY format. Must be base58 string or JSON array.')
     }
 
-    console.log('Update authority address:', updateAuthorityKeypair.publicKey.toBase58())
+    // Upload image and metadata to storage
+    const uploadResult = await uploadImageAndMetadata(
+      supabase,
+      validatedData.imageFile,
+      validatedData.tokenName,
+      validatedData.ticker,
+      validatedData.userWalletAddress
+    )
 
-    // Create UMI signer from keypair
-    const updateAuthoritySigner = createSignerFromKeypair(umi, {
-      publicKey: publicKey(updateAuthorityKeypair.publicKey.toBase58()),
-      secretKey: updateAuthorityKeypair.secretKey
-    })
+    // Update token metadata on-chain
+    const updateTransactionSignature = await updateTokenMetadata(
+      rpcUrl,
+      mintAddress,
+      updateAuthorityKeypair,
+      validatedData.tokenName,
+      validatedData.ticker,
+      uploadResult.metadataUri
+    )
 
-    // Use the update authority as the identity
-    umi.use(signerIdentity(updateAuthoritySigner))
-
-    console.log('Uploading image to Supabase Storage...')
-
-    // Generate unique filename for image
-    const timestamp = Date.now()
-    const imageExtension = imageFile.name.split('.').pop() || 'jpg'
-    const imageFileName = `images/${timestamp}-${userWalletAddress.slice(0, 8)}-${tokenName.replace(/\s+/g, '-').toLowerCase()}.${imageExtension}`
-
-    // Upload image to Supabase Storage
-    const imageBytes = new Uint8Array(await imageFile.arrayBuffer())
-    const { data: imageUploadData, error: imageUploadError } = await supabase.storage
-      .from('token-assets')
-      .upload(imageFileName, imageBytes, {
-        contentType: imageFile.type,
-        upsert: false
-      })
-
-    if (imageUploadError) {
-      console.error('Error uploading image:', imageUploadError)
-      throw new Error(`Failed to upload image: ${imageUploadError.message}`)
-    }
-
-    // Get public URL for the uploaded image
-    const { data: imageUrlData } = supabase.storage
-      .from('token-assets')
-      .getPublicUrl(imageFileName)
-
-    const imageUri = imageUrlData.publicUrl
-    console.log('Image uploaded to Supabase Storage:', imageUri)
-
-    // Create metadata object
-    const metadata = {
-      name: tokenName,
-      symbol: ticker.toUpperCase(),
-      description: `${tokenName} (${ticker}) - Token hijacked on Solana`,
-      image: imageUri,
-      attributes: [
-        {
-          trait_type: "Hijacked",
-          value: "Yes"
-        },
-        {
-          trait_type: "Original Hijacker", 
-          value: userWalletAddress
-        },
-        {
-          trait_type: "Hijack Date",
-          value: new Date().toISOString()
-        }
-      ],
-      properties: {
-        files: [
-          {
-            uri: imageUri,
-            type: imageFile.type,
-          }
-        ],
-        category: "image",
-      }
-    }
-
-    console.log('Uploading metadata to Supabase Storage...')
-
-    // Generate unique filename for metadata
-    const metadataFileName = `metadata/${timestamp}-${userWalletAddress.slice(0, 8)}-${tokenName.replace(/\s+/g, '-').toLowerCase()}.json`
-
-    // Upload metadata JSON to Supabase Storage
-    const metadataBytes = new TextEncoder().encode(JSON.stringify(metadata, null, 2))
-    const { data: metadataUploadData, error: metadataUploadError } = await supabase.storage
-      .from('token-assets')
-      .upload(metadataFileName, metadataBytes, {
-        contentType: 'application/json',
-        upsert: false
-      })
-
-    if (metadataUploadError) {
-      console.error('Error uploading metadata:', metadataUploadError)
-      throw new Error(`Failed to upload metadata: ${metadataUploadError.message}`)
-    }
-
-    // Get public URL for the uploaded metadata
-    const { data: metadataUrlData } = supabase.storage
-      .from('token-assets')
-      .getPublicUrl(metadataFileName)
-
-    const metadataUri = metadataUrlData.publicUrl
-    console.log('Metadata uploaded to Supabase Storage:', metadataUri)
-
-    // Fetch current metadata to verify update authority
-    console.log('Fetching current token metadata...')
-    const mintPublicKey = publicKey(mintAddress.toBase58())
-    const currentMetadata = await fetchMetadataFromSeeds(umi, { mint: mintPublicKey })
-
-    if (!currentMetadata) {
-      throw new Error('Token metadata not found on-chain')
-    }
-
-    console.log('Current update authority:', currentMetadata.updateAuthority)
-    console.log('Our update authority:', updateAuthoritySigner.publicKey)
-
-    // Verify we have update authority
-    if (currentMetadata.updateAuthority !== updateAuthoritySigner.publicKey) {
-      throw new Error(`Update authority mismatch. Expected: ${updateAuthoritySigner.publicKey}, Got: ${currentMetadata.updateAuthority}`)
-    }
-
-    console.log('Updating token metadata on-chain...')
-
-    // Update the metadata on-chain
-    const updateResult = await updateV1(umi, {
-      mint: mintPublicKey,
-      authority: updateAuthoritySigner,
-      data: {
-        name: tokenName,
-        symbol: ticker.toUpperCase(),
-        uri: metadataUri,
-        sellerFeeBasisPoints: currentMetadata.sellerFeeBasisPoints,
-        creators: currentMetadata.creators,
-        collection: currentMetadata.collection,
-        uses: currentMetadata.uses,
-      },
-    }).sendAndConfirm(umi)
-
-    // Convert the signature to base58 string using bs58
-    const updateTransactionSignatureString = bs58.encode(updateResult.signature)
-    
-    console.log('Metadata update transaction signature:', updateTransactionSignatureString)
-
-    const explorerUrl = `https://explorer.solana.com/tx/${paymentSignature}`
-    const updateExplorerUrl = `https://explorer.solana.com/tx/${updateTransactionSignatureString}`
+    const explorerUrl = `https://explorer.solana.com/tx/${validatedData.paymentSignature}`
+    const updateExplorerUrl = `https://explorer.solana.com/tx/${updateTransactionSignature}`
 
     // Update hijack record with success data
-    const { error: updateError } = await supabase
-      .from('token_hijacks')
-      .update({
-        status: 'completed',
-        explorer_url: explorerUrl,
-        image_uri: imageUri,
-        metadata_uri: metadataUri,
-        new_metadata: metadata,
-        block_time: txDetails?.blockTime
-      })
-      .eq('id', hijackRecordId)
-
-    if (updateError) {
-      console.error('Error updating hijack record:', updateError)
-    }
+    await updateHijackRecordSuccess(
+      supabase,
+      hijackRecordId,
+      explorerUrl,
+      uploadResult.imageUri,
+      uploadResult.metadataUri,
+      uploadResult.metadata,
+      paymentVerification.blockTime
+    )
 
     console.log('Token hijack completed successfully with real file storage!')
 
     return new Response(
       JSON.stringify({
         success: true,
-        transactionSignature: paymentSignature,
-        updateTransactionSignature: updateTransactionSignatureString,
+        transactionSignature: validatedData.paymentSignature,
+        updateTransactionSignature,
         explorerUrl,
         updateExplorerUrl,
-        imageUri,
-        metadataUri,
-        newMetadata: metadata,
-        blockTime: txDetails?.blockTime,
+        imageUri: uploadResult.imageUri,
+        metadataUri: uploadResult.metadataUri,
+        newMetadata: uploadResult.metadata,
+        blockTime: paymentVerification.blockTime,
         message: 'Token metadata successfully updated on-chain with real file storage!'
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -430,13 +170,7 @@ serve(async (req) => {
     
     // Update hijack record with error if we have a record ID
     if (hijackRecordId) {
-      await supabase
-        .from('token_hijacks')
-        .update({
-          status: 'failed',
-          error_message: error.message
-        })
-        .eq('id', hijackRecordId)
+      await updateHijackRecordError(supabase, hijackRecordId, error.message)
     }
 
     return new Response(
