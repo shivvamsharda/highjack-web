@@ -1,9 +1,11 @@
 
 import React, { useState } from 'react';
+import { useWallet } from '@solana/wallet-adapter-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Zap, AlertCircle, Lock, Unlock } from 'lucide-react';
+import { Zap, AlertCircle, Lock, Unlock, ExternalLink } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useTokenMetadata } from '@/hooks/useTokenMetadata';
 import FloatingLabelInput from './FloatingLabelInput';
 import DragDropZone from './DragDropZone';
 import TokenPreview from './TokenPreview';
@@ -14,13 +16,17 @@ interface HijackFormProps {
 }
 
 const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
+  const { publicKey } = useWallet();
   const [tokenName, setTokenName] = useState('');
   const [ticker, setTicker] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [transactionSignature, setTransactionSignature] = useState<string>('');
+  const [explorerUrl, setExplorerUrl] = useState<string>('');
   const { toast } = useToast();
+
+  const { updateTokenMetadata, isUpdating, progress } = useTokenMetadata();
 
   const handleImageUpload = (file: File) => {
     setImageFile(file);
@@ -43,31 +49,26 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
       return;
     }
 
-    setIsSubmitting(true);
-
-    try {
-      // Simulate payment and metadata update
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      
-      const success = Math.random() > 0.2; // 80% success rate
-      
-      if (success) {
-        setShowSuccess(true);
-        toast({
-          title: "Hijack Complete! 🎯",
-          description: "Token metadata updated successfully.",
-        });
-      } else {
-        throw new Error("Transaction failed");
-      }
-    } catch (error) {
+    if (!publicKey) {
       toast({
-        title: "Hijack Failed",
-        description: "Transaction failed. Your SOL is safe.",
+        title: "Wallet Not Connected",
+        description: "Please connect your wallet first.",
         variant: "destructive",
       });
-    } finally {
-      setIsSubmitting(false);
+      return;
+    }
+
+    const result = await updateTokenMetadata({
+      tokenName,
+      ticker,
+      imageFile,
+      userWalletAddress: publicKey.toBase58()
+    });
+
+    if (result.success && result.transactionSignature) {
+      setTransactionSignature(result.transactionSignature);
+      setExplorerUrl(result.explorerUrl || '');
+      setShowSuccess(true);
     }
   };
 
@@ -78,6 +79,8 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
     setTicker('');
     setImageFile(null);
     setImagePreview(null);
+    setTransactionSignature('');
+    setExplorerUrl('');
   };
 
   const isFormValid = tokenName && ticker && imageFile && isConnected;
@@ -91,7 +94,7 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
           tokenName={tokenName}
           ticker={ticker}
           imagePreview={imagePreview}
-          isSubmitting={isSubmitting}
+          isSubmitting={isUpdating}
         />
 
         {/* Hijack Form */}
@@ -115,7 +118,7 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
                   value={tokenName}
                   onChange={setTokenName}
                   placeholder="Enter the new identity..."
-                  disabled={!isConnected}
+                  disabled={!isConnected || isUpdating}
                 />
 
                 <FloatingLabelInput
@@ -125,7 +128,7 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
                   onChange={setTicker}
                   placeholder="SYMBOL"
                   maxLength={10}
-                  disabled={!isConnected}
+                  disabled={!isConnected || isUpdating}
                   transform={(value) => value.toUpperCase()}
                 />
               </div>
@@ -137,7 +140,7 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
                 <DragDropZone
                   onFileUpload={handleImageUpload}
                   imagePreview={imagePreview}
-                  disabled={!isConnected}
+                  disabled={!isConnected || isUpdating}
                 />
               </div>
 
@@ -146,32 +149,42 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
                   <AlertCircle className="w-6 h-6 text-primary mt-1 animate-pulse" />
                   <div>
                     <div className="text-primary font-bold text-lg mb-2">
-                      ⚡ Payment Required
+                      ⚡ Real On-Chain Update
                     </div>
                     <p className="text-muted-foreground">
                       This hijack costs <span className="text-primary font-bold text-lg">0.1 SOL</span> to 
-                      overwrite the token metadata permanently on-chain.
+                      permanently update the token metadata on Solana mainnet.
                     </p>
                     <div className="text-xs text-muted-foreground mt-2">
-                      • Non-refundable • Instant execution • Degen approved
+                      • Payment required • IPFS storage • Metaplex update • Transaction verified
                     </div>
                   </div>
                 </div>
               </div>
 
+              {/* Progress indicator */}
+              {isUpdating && progress && (
+                <div className="bg-primary/10 p-4 rounded-lg border border-primary/30">
+                  <div className="flex items-center gap-3">
+                    <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                    <span className="text-primary font-medium">{progress}</span>
+                  </div>
+                </div>
+              )}
+
               <Button
                 type="submit"
-                disabled={!isFormValid || isSubmitting}
+                disabled={!isFormValid || isUpdating}
                 className={`w-full h-16 text-xl font-bold transition-all duration-300 button-unlock hover:shadow-2xl active:scale-95 ${
                   isFormValid 
                     ? 'bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 glow-red hover:glow-red-intense animate-glow-pulse' 
                     : 'bg-secondary border border-border'
-                } ${isSubmitting ? 'animate-unlock' : ''}`}
+                } ${isUpdating ? 'animate-unlock' : ''}`}
               >
-                {isSubmitting ? (
+                {isUpdating ? (
                   <div className="flex items-center gap-3">
                     <div className="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                    Processing Payment...
+                    {progress || 'Processing...'}
                   </div>
                 ) : (
                   <div className="flex items-center gap-3">
@@ -197,6 +210,8 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
         tokenName={tokenName}
         ticker={ticker}
         imagePreview={imagePreview}
+        transactionSignature={transactionSignature}
+        explorerUrl={explorerUrl}
       />
     </>
   );
