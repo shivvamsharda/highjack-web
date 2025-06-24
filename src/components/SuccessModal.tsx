@@ -12,7 +12,9 @@ interface SuccessModalProps {
   ticker: string;
   imagePreview: string | null;
   transactionSignature?: string;
+  updateTransactionSignature?: string;
   explorerUrl?: string;
+  updateExplorerUrl?: string;
 }
 
 const SuccessModal: React.FC<SuccessModalProps> = ({
@@ -22,20 +24,20 @@ const SuccessModal: React.FC<SuccessModalProps> = ({
   ticker,
   imagePreview,
   transactionSignature,
-  explorerUrl
+  updateTransactionSignature,
+  explorerUrl,
+  updateExplorerUrl
 }) => {
   const { toast } = useToast();
 
   if (!isOpen) return null;
 
-  const copyTransactionId = () => {
-    if (transactionSignature) {
-      navigator.clipboard.writeText(transactionSignature);
-      toast({
-        title: "Copied!",
-        description: "Transaction ID copied to clipboard",
-      });
-    }
+  const copyTransactionId = (signature: string, type: string) => {
+    navigator.clipboard.writeText(signature);
+    toast({
+      title: "Copied!",
+      description: `${type} transaction ID copied to clipboard`,
+    });
   };
 
   const truncateSignature = (sig: string) => {
@@ -90,38 +92,75 @@ const SuccessModal: React.FC<SuccessModalProps> = ({
             </div>
 
             {/* Transaction Details */}
-            {transactionSignature && (
-              <div className="space-y-3 border-t border-border pt-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Transaction ID:</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-mono text-foreground">
-                      {truncateSignature(transactionSignature)}
-                    </span>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={copyTransactionId}
-                      className="h-6 w-6"
-                    >
-                      <Copy className="w-3 h-3" />
-                    </Button>
+            <div className="space-y-4 border-t border-border pt-4">
+              {/* Payment Transaction */}
+              {transactionSignature && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Payment Transaction:</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-mono text-foreground">
+                        {truncateSignature(transactionSignature)}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => copyTransactionId(transactionSignature, 'Payment')}
+                        className="h-6 w-6"
+                      >
+                        <Copy className="w-3 h-3" />
+                      </Button>
+                    </div>
                   </div>
+                  
+                  {explorerUrl && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => window.open(explorerUrl, '_blank')}
+                    >
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      View Payment on Explorer
+                    </Button>
+                  )}
                 </div>
-                
-                {explorerUrl && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full"
-                    onClick={() => window.open(explorerUrl, '_blank')}
-                  >
-                    <ExternalLink className="w-4 h-4 mr-2" />
-                    View on Solana Explorer
-                  </Button>
-                )}
-              </div>
-            )}
+              )}
+
+              {/* Update Transaction */}
+              {updateTransactionSignature && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Metadata Update:</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-mono text-foreground">
+                        {truncateSignature(updateTransactionSignature)}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => copyTransactionId(updateTransactionSignature, 'Update')}
+                        className="h-6 w-6"
+                      >
+                        <Copy className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  {updateExplorerUrl && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => window.open(updateExplorerUrl, '_blank')}
+                    >
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      View Update on Explorer
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
           
           <div className="text-center space-y-3">
