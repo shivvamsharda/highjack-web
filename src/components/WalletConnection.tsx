@@ -130,7 +130,7 @@ const WalletConnection: React.FC<WalletConnectionProps> = ({
     return (
       <div className="flex items-center">
         <WalletMultiButton 
-          className="!bg-primary !text-primary-foreground !font-medium !py-2 !px-4 !text-sm !rounded-lg glow-red !transition-all !duration-300 hover:glow-red-intense"
+          className="!bg-primary !text-primary-foreground !font-medium !py-2 !px-4 !text-sm !rounded-lg glow-red !transition-all !duration-300 hover:glow-red-intense !border-0"
         />
         {connecting && (
           <div className="ml-2 text-primary text-xs animate-pulse">
@@ -193,7 +193,7 @@ const WalletConnection: React.FC<WalletConnectionProps> = ({
       <CardContent className="space-y-4">
         <div className="flex flex-col items-center gap-4">
           <WalletMultiButton 
-            className="!bg-gradient-to-r !from-primary !to-primary/80 hover:!from-primary/90 hover:!to-primary/70 !text-primary-foreground !font-bold !py-4 !text-lg !px-8 !rounded-md glow-red !transition-all !duration-300 hover:glow-red-intense button-unlock animate-glow-pulse"
+            className="!bg-primary !text-primary-foreground !font-bold !py-4 !text-lg !px-8 !rounded-md glow-red !transition-all !duration-300 hover:glow-red-intense button-unlock animate-glow-pulse !border-0"
           />
           
           {connectionError && (
