@@ -5,7 +5,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Twitter, MessageCircle, ArrowRight, RefreshCw, ExternalLink, Shield, Globe, Clock, Users, TrendingUp, Copy } from 'lucide-react';
+import { Twitter, MessageCircle, ArrowRight, RefreshCw, ExternalLink, Shield, TrendingUp, Copy } from 'lucide-react';
 import { useTokenMetadata } from '@/hooks/useTokenMetadata';
 
 interface TokenPreviewProps {
@@ -321,7 +321,7 @@ const TokenPreview: React.FC<TokenPreviewProps> = ({
 
         {/* Empty state when no user input */}
         {!hasUserData && (
-          <div className="space-y-6">
+          <div className="space-y-4">
             <div className="text-center space-y-4 opacity-60">
               <div className="text-sm text-muted-foreground mb-3">
                 👀 Preview Your Hijack
@@ -345,48 +345,6 @@ const TokenPreview: React.FC<TokenPreviewProps> = ({
                 
                 <div className="text-xs text-muted-foreground">
                   Fill the form to see your hijack
-                </div>
-              </div>
-            </div>
-
-            {/* Placeholder sections */}
-            <div className="space-y-4 opacity-40">
-              <Separator />
-              <div className="bg-secondary/20 p-4 rounded-lg">
-                <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
-                  <Globe className="w-4 h-4" />
-                  Network Information
-                </h4>
-                <div className="grid grid-cols-2 gap-3 text-xs">
-                  <div className="space-y-1">
-                    <div className="text-muted-foreground">Blockchain</div>
-                    <Badge variant="outline" className="text-xs">Solana Mainnet</Badge>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="text-muted-foreground">Protocol</div>
-                    <Badge variant="outline" className="text-xs">Metaplex</Badge>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-secondary/20 p-4 rounded-lg">
-                <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
-                  <Clock className="w-4 h-4" />
-                  Process Timeline
-                </h4>
-                <div className="space-y-2 text-xs">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">1. Upload to IPFS</span>
-                    <span>~30s</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">2. Update metadata</span>
-                    <span>~15s</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">3. Blockchain confirm</span>
-                    <span>~10s</span>
-                  </div>
                 </div>
               </div>
             </div>
