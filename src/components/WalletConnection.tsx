@@ -79,7 +79,6 @@ const WalletConnection: React.FC<WalletConnectionProps> = ({
     switch (walletName.toLowerCase()) {
       case 'phantom': return '👻';
       case 'solflare': return '☀️';
-      case 'backpack': return '🎒';
       default: return '🪙';
     }
   };
