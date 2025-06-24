@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -42,7 +41,7 @@ const TokenPreview: React.FC<TokenPreviewProps> = ({
   };
 
   return (
-    <Card className={`bg-card/90 backdrop-blur-sm border-primary/30 transition-all duration-500 glow-red h-fit ${
+    <Card className={`bg-card/90 backdrop-blur-sm border-primary/30 transition-all duration-500 glow-red h-full ${
       hasUserData ? 'animate-slide-up opacity-100' : 'opacity-90'
     } ${isSubmitting ? 'animate-unlock' : ''}`}>
       <CardHeader>
@@ -51,7 +50,7 @@ const TokenPreview: React.FC<TokenPreviewProps> = ({
         </CardTitle>
       </CardHeader>
       
-      <CardContent className="p-6 space-y-4">
+      <CardContent className="p-6 space-y-4 h-full flex flex-col">
         {/* Current Token Section */}
         <div className="space-y-3">
           <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
@@ -164,7 +163,7 @@ const TokenPreview: React.FC<TokenPreviewProps> = ({
 
         {/* Your Hijack Preview Section */}
         {hasUserData && (
-          <div className="space-y-3">
+          <div className="space-y-3 flex-1">
             <div className="text-sm text-primary font-medium text-center">
               🏴‍☠️ Your Planned Hijack
             </div>
@@ -223,7 +222,7 @@ const TokenPreview: React.FC<TokenPreviewProps> = ({
 
         {/* Empty state when no user input */}
         {!hasUserData && (
-          <div className="space-y-4">
+          <div className="space-y-4 flex-1 flex items-center justify-center">
             <div className="text-center space-y-4 opacity-60">
               <div className="text-sm text-muted-foreground mb-3">
                 👀 Preview Your Hijack
