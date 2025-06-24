@@ -1,6 +1,7 @@
 
 import React from 'react';
 import WalletConnection from './WalletConnection';
+import { Button } from '@/components/ui/button';
 
 interface HeaderProps {
   isWalletConnected: boolean;
@@ -15,6 +16,16 @@ const Header: React.FC<HeaderProps> = ({
   onConnect,
   onDisconnect
 }) => {
+  const scrollToRecentHijacks = () => {
+    const recentHijacksElement = document.getElementById('recent-hijacks');
+    if (recentHijacksElement) {
+      recentHijacksElement.scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'start'
+      });
+    }
+  };
+
   return (
     <header className="text-center mb-8 md:mb-12 animate-slide-up relative">
       <div className="max-w-7xl mx-auto px-4">
@@ -61,6 +72,15 @@ const Header: React.FC<HeaderProps> = ({
               💀 Built for chaos
             </span>
           </div>
+          <Button
+            variant="ghost"
+            onClick={scrollToRecentHijacks}
+            className="bg-secondary/50 px-3 md:px-4 py-1 md:py-2 rounded-full border border-primary/20 hover:border-primary/40 hover:bg-secondary/70 transition-all duration-300"
+          >
+            <span className="text-xs md:text-sm text-muted-foreground hover:text-foreground">
+              🏴‍☠️ Recent Hijacks
+            </span>
+          </Button>
         </div>
       </div>
     </header>

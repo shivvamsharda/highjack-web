@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -90,7 +89,7 @@ const HijackHistory: React.FC = () => {
   ];
 
   return (
-    <Card className="bg-card/80 backdrop-blur-sm border-primary/30 glow-red animate-slide-up h-fit">
+    <Card id="recent-hijacks" className="bg-card/80 backdrop-blur-sm border-primary/30 glow-red animate-slide-up h-fit">
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="text-2xl font-space-grotesk text-glow">
