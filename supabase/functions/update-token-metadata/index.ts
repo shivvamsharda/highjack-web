@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
 import { Connection, PublicKey, Keypair, SystemProgram } from 'https://esm.sh/@solana/web3.js@1.98.2'
@@ -53,6 +52,33 @@ serve(async (req) => {
       )
     }
 
+    console.log('Checking for duplicate transaction signature...')
+
+    // Check if transaction signature already exists in database
+    const { data: existingSignature, error: signatureCheckError } = await supabase
+      .from('token_hijacks')
+      .select('transaction_signature')
+      .eq('transaction_signature', paymentSignature)
+      .single()
+
+    if (signatureCheckError && signatureCheckError.code !== 'PGRST116') {
+      // PGRST116 is "not found" error, which is what we expect for new signatures
+      console.error('Error checking for duplicate signature:', signatureCheckError)
+      throw new Error('Failed to verify transaction signature uniqueness')
+    }
+
+    if (existingSignature) {
+      console.log('Duplicate signature detected:', paymentSignature)
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          error: 'Transaction signature already verified',
+          details: 'This transaction has already been used to hijack the token'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 409 }
+      )
+    }
+
     // Get environment variables
     const rpcUrl = Deno.env.get('RPC_URL')
     const mintAddressStr = Deno.env.get('MINT_ADDRESS')
@@ -87,7 +113,35 @@ serve(async (req) => {
       throw new Error('Payment transaction not found or not confirmed')
     }
 
-    console.log('Transaction details found, verifying payment to treasury...')
+    console.log('Transaction details found, verifying transaction sender...')
+
+    // Verify transaction sender matches provided wallet address
+    const accountKeys = txDetails.transaction.message.accountKeys
+    if (!accountKeys || accountKeys.length === 0) {
+      throw new Error('Invalid transaction: no account keys found')
+    }
+
+    // First account key is always the fee payer (transaction sender)
+    const transactionSender = accountKeys[0]
+    const providedWallet = new PublicKey(userWalletAddress)
+
+    if (!transactionSender.equals(providedWallet)) {
+      console.log('Transaction sender mismatch:')
+      console.log('Transaction sender:', transactionSender.toBase58())
+      console.log('Provided wallet:', providedWallet.toBase58())
+      
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          error: 'Transaction sender does not match provided wallet address',
+          details: 'The transaction was not sent from the wallet address you provided'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 403 }
+      )
+    }
+
+    console.log('Transaction sender verified successfully')
+    console.log('Verifying payment to treasury...')
 
     // Improved payment verification logic
     const instructions = txDetails.transaction.message.instructions
