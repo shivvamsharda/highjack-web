@@ -5,7 +5,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Twitter, MessageCircle, ArrowRight, RefreshCw, ExternalLink, Shield, TrendingUp, Copy } from 'lucide-react';
+import { ArrowRight, RefreshCw, ExternalLink, Shield, TrendingUp, Copy } from 'lucide-react';
 import { useTokenMetadata } from '@/hooks/useTokenMetadata';
 
 interface TokenPreviewProps {
@@ -51,9 +51,9 @@ const TokenPreview: React.FC<TokenPreviewProps> = ({
         </CardTitle>
       </CardHeader>
       
-      <CardContent className="p-6 space-y-6">
+      <CardContent className="p-6 space-y-4">
         {/* Current Token Section */}
-        <div className="space-y-4">
+        <div className="space-y-3">
           <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
             <span>🔍 Current Token On-Chain</span>
             <Button
@@ -73,9 +73,9 @@ const TokenPreview: React.FC<TokenPreviewProps> = ({
               <span className="text-sm text-muted-foreground">Loading current token...</span>
             </div>
           ) : currentMetadata ? (
-            <div className="space-y-4">
-              <div className="flex flex-col items-center space-y-4">
-                <Avatar className="w-16 h-16 border-2 border-secondary/50">
+            <div className="space-y-3">
+              <div className="flex flex-col items-center space-y-3">
+                <Avatar className="w-14 h-14 border-2 border-secondary/50">
                   {currentMetadata.image ? (
                     <AvatarImage src={currentMetadata.image} alt="Current token" className="object-cover" />
                   ) : (
@@ -96,12 +96,12 @@ const TokenPreview: React.FC<TokenPreviewProps> = ({
               </div>
 
               {/* Token Information */}
-              <div className="space-y-3 bg-secondary/20 p-4 rounded-lg">
+              <div className="space-y-2 bg-secondary/20 p-3 rounded-lg">
                 <h4 className="font-semibold text-sm flex items-center gap-2">
                   <Shield className="w-4 h-4" />
                   Token Information
                 </h4>
-                <div className="space-y-2 text-xs">
+                <div className="space-y-1 text-xs">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Mint Address:</span>
                     <div className="flex items-center gap-1">
@@ -120,23 +120,16 @@ const TokenPreview: React.FC<TokenPreviewProps> = ({
                     <span className="text-muted-foreground">Update Authority:</span>
                     <span className="font-mono">{truncateAddress(currentMetadata.updateAuthority)}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Metadata URI:</span>
-                    <div className="flex items-center gap-1">
-                      <span className="font-mono">{truncateAddress(currentMetadata.metadataUri)}</span>
-                      <ExternalLink className="w-3 h-3" />
-                    </div>
-                  </div>
                 </div>
               </div>
 
-              {/* Mock Statistics */}
-              <div className="space-y-3 bg-secondary/20 p-4 rounded-lg">
+              {/* Token Stats */}
+              <div className="space-y-2 bg-secondary/20 p-3 rounded-lg">
                 <h4 className="font-semibold text-sm flex items-center gap-2">
                   <TrendingUp className="w-4 h-4" />
                   Token Stats
                 </h4>
-                <div className="grid grid-cols-2 gap-3 text-xs">
+                <div className="grid grid-cols-2 gap-2 text-xs">
                   <div className="space-y-1">
                     <div className="text-muted-foreground">Holders</div>
                     <div className="font-semibold">1,247</div>
@@ -144,14 +137,6 @@ const TokenPreview: React.FC<TokenPreviewProps> = ({
                   <div className="space-y-1">
                     <div className="text-muted-foreground">Market Cap</div>
                     <div className="font-semibold">$42.6K</div>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="text-muted-foreground">24h Volume</div>
-                    <div className="font-semibold">$8.2K</div>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="text-muted-foreground">Last Updated</div>
-                    <div className="font-semibold">2h ago</div>
                   </div>
                 </div>
               </div>
@@ -179,14 +164,14 @@ const TokenPreview: React.FC<TokenPreviewProps> = ({
 
         {/* Your Hijack Preview Section */}
         {hasUserData && (
-          <div className="space-y-4">
+          <div className="space-y-3">
             <div className="text-sm text-primary font-medium text-center">
               🏴‍☠️ Your Planned Hijack
             </div>
             
-            <div className="space-y-4">
-              <div className="flex flex-col items-center space-y-4">
-                <Avatar className="w-20 h-20 border-2 border-primary/50 transition-all duration-300 glow-red">
+            <div className="space-y-3">
+              <div className="flex flex-col items-center space-y-3">
+                <Avatar className="w-16 h-16 border-2 border-primary/50 transition-all duration-300 glow-red">
                   {imagePreview ? (
                     <AvatarImage src={imagePreview} alt="Token preview" className="object-cover" />
                   ) : (
@@ -196,7 +181,7 @@ const TokenPreview: React.FC<TokenPreviewProps> = ({
                   )}
                 </Avatar>
                 
-                <div className="space-y-2 text-center">
+                <div className="space-y-1 text-center">
                   <div className="font-bold text-xl text-foreground">
                     {tokenName || 'Token Name'}
                   </div>
@@ -207,11 +192,11 @@ const TokenPreview: React.FC<TokenPreviewProps> = ({
               </div>
 
               {/* What Will Change */}
-              <div className="space-y-3 bg-primary/10 p-4 rounded-lg border border-primary/30">
+              <div className="space-y-2 bg-primary/10 p-3 rounded-lg border border-primary/30">
                 <h4 className="font-semibold text-sm flex items-center gap-2">
                   🔄 What Will Change
                 </h4>
-                <div className="space-y-2 text-xs">
+                <div className="space-y-1 text-xs">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Name:</span>
                     <span className="text-primary font-semibold">
@@ -232,89 +217,6 @@ const TokenPreview: React.FC<TokenPreviewProps> = ({
                   </div>
                 </div>
               </div>
-
-              {/* Social Media Preview */}
-              <div className="space-y-3 bg-secondary/20 p-4 rounded-lg">
-                <h4 className="font-semibold text-sm flex items-center gap-2">
-                  📱 Social Media Preview
-                </h4>
-                <div className="space-y-3">
-                  {/* Twitter Preview */}
-                  <div className="bg-card p-3 rounded border border-border">
-                    <div className="flex items-start gap-2">
-                      <Avatar className="w-8 h-8">
-                        {imagePreview ? (
-                          <AvatarImage src={imagePreview} alt="Token" />
-                        ) : (
-                          <AvatarFallback>🪙</AvatarFallback>
-                        )}
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1">
-                          <span className="font-semibold text-sm truncate">
-                            {tokenName || 'Token Name'}
-                          </span>
-                          <span className="text-muted-foreground text-xs">
-                            ${ticker || 'TICK'}
-                          </span>
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          Just got hijacked! 🏴‍☠️
-                        </p>
-                      </div>
-                      <Twitter className="w-4 h-4 text-blue-500" />
-                    </div>
-                  </div>
-
-                  {/* Discord Preview */}
-                  <div className="bg-card p-3 rounded border border-border">
-                    <div className="flex items-center gap-2">
-                      <Avatar className="w-6 h-6">
-                        {imagePreview ? (
-                          <AvatarImage src={imagePreview} alt="Token" />
-                        ) : (
-                          <AvatarFallback className="text-xs">🪙</AvatarFallback>
-                        )}
-                      </Avatar>
-                      <span className="font-semibold text-sm">
-                        {tokenName || 'Token Name'} (${ticker || 'TICK'})
-                      </span>
-                      <MessageCircle className="w-4 h-4 text-indigo-500" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Technical Details */}
-              <div className="space-y-3 bg-secondary/20 p-4 rounded-lg">
-                <h4 className="font-semibold text-sm flex items-center gap-2">
-                  ⚙️ Technical Details
-                </h4>
-                <div className="grid grid-cols-2 gap-3 text-xs">
-                  <div className="space-y-1">
-                    <div className="text-muted-foreground">Network</div>
-                    <div className="flex items-center gap-1">
-                      <Badge variant="outline" className="text-xs">Solana</Badge>
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="text-muted-foreground">Standard</div>
-                    <div className="flex items-center gap-1">
-                      <Badge variant="outline" className="text-xs">Metaplex</Badge>
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="text-muted-foreground">Storage</div>
-                    <div className="flex items-center gap-1">
-                      <Badge variant="outline" className="text-xs">IPFS</Badge>
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="text-muted-foreground">Cost</div>
-                    <div className="text-primary font-semibold">0.1 SOL</div>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         )}
@@ -328,7 +230,7 @@ const TokenPreview: React.FC<TokenPreviewProps> = ({
               </div>
               
               <div className="flex flex-col items-center space-y-4">
-                <Avatar className="w-20 h-20 border-2 border-secondary/50">
+                <Avatar className="w-16 h-16 border-2 border-secondary/50">
                   <AvatarFallback className="bg-secondary/80 text-2xl">
                     🪙
                   </AvatarFallback>
