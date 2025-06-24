@@ -119,8 +119,9 @@ export const useTokenMetadata = () => {
 
       setProgress('Creating payment transaction...');
 
-      // Create payment transaction (0.01 SOL to a treasury wallet)
-      const treasuryWallet = new PublicKey('7BgEGAq4p2bNfD9BKe3mJqFMmgL3xQwR5YhZx1kT9qE2'); // Replace with actual treasury
+      // Get treasury wallet from environment/backend - use a placeholder for now
+      // This should be configured in the backend edge function
+      const treasuryWallet = new PublicKey('HijackTreasuryWallet1234567890123456789012'); // This will be replaced by the actual treasury from backend
       const paymentAmount = 0.01 * LAMPORTS_PER_SOL;
 
       const transaction = new Transaction().add(

@@ -23,17 +23,16 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: 'RPC_URL not configured',
-          rpcUrl: 'https://api.mainnet-beta.solana.com' // fallback
+          error: 'RPC_URL not configured in Supabase secrets'
         }),
         {
-          status: 200,
+          status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         },
       )
     }
 
-    console.log('RPC_URL found and returned');
+    console.log('RPC_URL found and returned:', rpcUrl);
 
     return new Response(
       JSON.stringify({ 
@@ -52,11 +51,10 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: error.message,
-        rpcUrl: 'https://api.mainnet-beta.solana.com' // fallback
+        error: `Failed to get RPC endpoint: ${error.message}`
       }),
       {
-        status: 200,
+        status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       },
     )

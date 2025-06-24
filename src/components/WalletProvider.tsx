@@ -17,21 +17,35 @@ interface SolanaWalletProviderProps {
 }
 
 const SolanaWalletProvider: React.FC<SolanaWalletProviderProps> = ({ children }) => {
-  const [rpcEndpoint, setRpcEndpoint] = useState<string>('https://api.mainnet-beta.solana.com');
+  const [rpcEndpoint, setRpcEndpoint] = useState<string | null>(null);
+  const [rpcError, setRpcError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchRpcEndpoint = async () => {
       try {
-        // Fetch the same RPC_URL that the backend edge functions use
+        console.log('Fetching RPC endpoint from Supabase...');
         const { data, error } = await supabase.functions.invoke('get-rpc-endpoint');
-        if (data && data.rpcUrl) {
+        
+        if (error) {
+          console.error('Supabase function error:', error);
+          setRpcError(`Failed to fetch RPC endpoint: ${error.message}`);
+          return;
+        }
+
+        if (data && data.success && data.rpcUrl) {
+          console.log('Successfully fetched RPC endpoint:', data.rpcUrl);
           setRpcEndpoint(data.rpcUrl);
-          console.log('Using RPC endpoint:', data.rpcUrl);
+          setRpcError(null);
         } else {
-          console.warn('Could not fetch RPC endpoint, using default:', error);
+          console.error('RPC endpoint not configured:', data);
+          setRpcError(data?.error || 'RPC_URL not configured in Supabase secrets');
         }
       } catch (error) {
-        console.warn('Failed to fetch RPC endpoint, using default:', error);
+        console.error('Failed to fetch RPC endpoint:', error);
+        setRpcError(`Network error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -51,6 +65,35 @@ const SolanaWalletProvider: React.FC<SolanaWalletProviderProps> = ({ children })
     ],
     []
   );
+
+  // Show loading state while fetching RPC endpoint
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Connecting to Solana network...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state if RPC endpoint is not available
+  if (rpcError || !endpoint) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center max-w-md">
+          <div className="text-red-500 text-xl mb-4">⚠️ Network Configuration Error</div>
+          <p className="text-muted-foreground mb-4">
+            {rpcError || 'No RPC endpoint available'}
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Please ensure the RPC_URL is configured in Supabase secrets.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <ConnectionProvider endpoint={endpoint}>
