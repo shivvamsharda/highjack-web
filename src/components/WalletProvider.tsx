@@ -17,8 +17,8 @@ interface SolanaWalletProviderProps {
 }
 
 const SolanaWalletProvider: React.FC<SolanaWalletProviderProps> = ({ children }) => {
-  // Use devnet for development, change to mainnet-beta for production
-  const network = WalletAdapterNetwork.Devnet;
+  // Use mainnet for production - this is where real SOL transactions happen
+  const network = WalletAdapterNetwork.Mainnet;
   
   const endpoint = useMemo(() => clusterApiUrl(network), [network]);
   

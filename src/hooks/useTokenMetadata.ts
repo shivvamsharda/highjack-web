@@ -1,6 +1,9 @@
+
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useWallet, useConnection } from '@solana/wallet-adapter-react';
+import { PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
 
 interface UpdateTokenMetadataParams {
   tokenName: string;
@@ -46,6 +49,8 @@ export const useTokenMetadata = () => {
   const [progress, setProgress] = useState<string>('');
   const [currentMetadata, setCurrentMetadata] = useState<CurrentTokenMetadata | null>(null);
   const { toast } = useToast();
+  const { publicKey, sendTransaction } = useWallet();
+  const { connection } = useConnection();
 
   const fetchCurrentTokenMetadata = async (): Promise<FetchCurrentMetadataResponse> => {
     setIsFetchingCurrent(true);
@@ -98,6 +103,10 @@ export const useTokenMetadata = () => {
     setProgress('Preparing to hijack token...');
 
     try {
+      if (!publicKey || !sendTransaction) {
+        throw new Error('Wallet not connected');
+      }
+
       // Validate file size (max 10MB)
       if (imageFile.size > 10 * 1024 * 1024) {
         throw new Error('Image file too large. Maximum size is 10MB.');
@@ -108,18 +117,43 @@ export const useTokenMetadata = () => {
         throw new Error('Invalid file type. Please upload an image file.');
       }
 
-      setProgress('Uploading image to IPFS...');
+      setProgress('Creating payment transaction...');
 
-      // Create form data
+      // Create payment transaction (0.01 SOL to a treasury wallet)
+      const treasuryWallet = new PublicKey('7BgEGAq4p2bNfD9BKe3mJqFMmgL3xQwR5YhZx1kT9qE2'); // Replace with actual treasury
+      const paymentAmount = 0.01 * LAMPORTS_PER_SOL;
+
+      const transaction = new Transaction().add(
+        SystemProgram.transfer({
+          fromPubkey: publicKey,
+          toPubkey: treasuryWallet,
+          lamports: paymentAmount,
+        })
+      );
+
+      setProgress('Sending payment transaction...');
+
+      // Send and confirm the payment transaction
+      const signature = await sendTransaction(transaction, connection);
+      console.log('Payment transaction sent:', signature);
+
+      setProgress('Confirming payment...');
+
+      // Wait for confirmation
+      await connection.confirmTransaction(signature, 'confirmed');
+      console.log('Payment confirmed:', signature);
+
+      setProgress('Processing hijack...');
+
+      // Create form data for the edge function
       const formData = new FormData();
       formData.append('tokenName', tokenName);
       formData.append('ticker', ticker.toUpperCase());
       formData.append('imageFile', imageFile);
       formData.append('userWalletAddress', userWalletAddress);
+      formData.append('paymentSignature', signature);
 
-      setProgress('Processing payment and updating metadata...');
-
-      // Call the edge function
+      // Call the edge function with payment proof
       const { data, error } = await supabase.functions.invoke('update-token-metadata', {
         body: formData,
       });
@@ -133,7 +167,7 @@ export const useTokenMetadata = () => {
         throw new Error(data.error || 'Token metadata update failed');
       }
 
-      setProgress('Confirming transaction on blockchain...');
+      setProgress('Hijack completed!');
 
       toast({
         title: "Token Hijacked Successfully! 🎉",
@@ -166,8 +200,6 @@ export const useTokenMetadata = () => {
   };
 
   const calculateActualFee = async (): Promise<number> => {
-    // For now, return the fixed fee
-    // In the future, this could calculate actual transaction costs
     return 0.01;
   };
 
