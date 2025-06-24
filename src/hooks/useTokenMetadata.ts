@@ -22,10 +22,72 @@ interface UpdateTokenMetadataResponse {
   details?: string;
 }
 
+interface CurrentTokenMetadata {
+  name: string;
+  symbol: string;
+  image: string | null;
+  description: string | null;
+  metadataUri: string;
+  updateAuthority: string;
+  mintAddress: string;
+  creators?: any[];
+  collection?: any;
+}
+
+interface FetchCurrentMetadataResponse {
+  success: boolean;
+  metadata?: CurrentTokenMetadata;
+  error?: string;
+  details?: string;
+}
+
 export const useTokenMetadata = () => {
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isFetchingCurrent, setIsFetchingCurrent] = useState(false);
   const [progress, setProgress] = useState<string>('');
+  const [currentMetadata, setCurrentMetadata] = useState<CurrentTokenMetadata | null>(null);
   const { toast } = useToast();
+
+  const fetchCurrentTokenMetadata = async (): Promise<FetchCurrentMetadataResponse> => {
+    setIsFetchingCurrent(true);
+    
+    try {
+      console.log('Fetching current token metadata...');
+      
+      const { data, error } = await supabase.functions.invoke('get-token-metadata');
+
+      if (error) {
+        console.error('Edge function error:', error);
+        throw new Error(error.message || 'Failed to fetch current token metadata');
+      }
+
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to fetch token metadata');
+      }
+
+      setCurrentMetadata(data.metadata);
+      console.log('Current metadata fetched successfully:', data.metadata);
+      
+      return data;
+
+    } catch (error) {
+      console.error('Fetch current metadata error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      
+      toast({
+        title: "Failed to Load Current Token",
+        description: errorMessage,
+        variant: "destructive",
+      });
+
+      return {
+        success: false,
+        error: errorMessage
+      };
+    } finally {
+      setIsFetchingCurrent(false);
+    }
+  };
 
   const updateTokenMetadata = async ({
     tokenName,
@@ -79,6 +141,9 @@ export const useTokenMetadata = () => {
         description: `${tokenName} metadata updated on-chain`,
       });
 
+      // Refresh current metadata after successful update
+      await fetchCurrentTokenMetadata();
+
       return data;
 
     } catch (error) {
@@ -109,8 +174,11 @@ export const useTokenMetadata = () => {
 
   return {
     updateTokenMetadata,
+    fetchCurrentTokenMetadata,
     calculateActualFee,
     isUpdating,
-    progress
+    isFetchingCurrent,
+    progress,
+    currentMetadata
   };
 };
