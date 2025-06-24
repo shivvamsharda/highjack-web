@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Button } from '@/components/ui/button';
@@ -88,120 +87,127 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
 
   return (
     <>
-      <div className={`space-y-6 transition-all duration-500 ${isConnected ? 'animate-slide-up' : 'opacity-60'}`}>
-        {/* Token Preview */}
-        <TokenPreview
-          tokenName={tokenName}
-          ticker={ticker}
-          imagePreview={imagePreview}
-          isSubmitting={isUpdating}
-        />
+      <div className={`transition-all duration-500 ${isConnected ? 'animate-slide-up' : 'opacity-60'}`}>
+        {/* Two Column Layout - Preview Left, Form Right */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Left Column - Token Preview */}
+          <div className="space-y-6">
+            <TokenPreview
+              tokenName={tokenName}
+              ticker={ticker}
+              imagePreview={imagePreview}
+              isSubmitting={isUpdating}
+            />
+          </div>
 
-        {/* Hijack Form */}
-        <Card className={`bg-card/80 backdrop-blur-sm border-border transition-all duration-300 ${isConnected ? 'border-primary/30 glow-red' : ''}`}>
-          <CardHeader>
-            <CardTitle className="text-2xl md:text-3xl flex items-center gap-3 text-glow font-space-grotesk">
-              <Zap className="w-8 h-8 text-primary animate-pulse" />
-              Hijack Token Metadata
-            </CardTitle>
-            <p className="text-muted-foreground text-lg">
-              Steal the billboard. Make it yours. Leave your mark on-chain.
-            </p>
-          </CardHeader>
-          
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FloatingLabelInput
-                  id="tokenName"
-                  label="New Token Name"
-                  value={tokenName}
-                  onChange={setTokenName}
-                  placeholder="Enter the new identity..."
-                  disabled={!isConnected || isUpdating}
-                />
-
-                <FloatingLabelInput
-                  id="ticker"
-                  label="New Ticker Symbol"
-                  value={ticker}
-                  onChange={setTicker}
-                  placeholder="SYMBOL"
-                  maxLength={10}
-                  disabled={!isConnected || isUpdating}
-                  transform={(value) => value.toUpperCase()}
-                />
-              </div>
-
-              <div>
-                <label className="block text-foreground font-medium text-lg mb-3">
-                  New Profile Picture
-                </label>
-                <DragDropZone
-                  onFileUpload={handleImageUpload}
-                  imagePreview={imagePreview}
-                  disabled={!isConnected || isUpdating}
-                />
-              </div>
-
-              <div className="bg-secondary/30 p-6 rounded-lg border border-primary/20 neon-red">
-                <div className="flex items-start gap-3">
-                  <AlertCircle className="w-6 h-6 text-primary mt-1 animate-pulse" />
-                  <div>
-                    <div className="text-primary font-bold text-lg mb-2">
-                      ⚡ Real On-Chain Update
-                    </div>
-                    <p className="text-muted-foreground">
-                      This hijack costs <span className="text-primary font-bold text-lg">0.1 SOL</span> to 
-                      permanently update the token metadata on Solana mainnet.
-                    </p>
-                    <div className="text-xs text-muted-foreground mt-2">
-                      • Payment required • IPFS storage • Metaplex update • Transaction verified
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Progress indicator */}
-              {isUpdating && progress && (
-                <div className="bg-primary/10 p-4 rounded-lg border border-primary/30">
-                  <div className="flex items-center gap-3">
-                    <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-                    <span className="text-primary font-medium">{progress}</span>
-                  </div>
-                </div>
-              )}
-
-              <Button
-                type="submit"
-                disabled={!isFormValid || isUpdating}
-                className={`w-full h-16 text-xl font-bold transition-all duration-300 button-unlock hover:shadow-2xl active:scale-95 ${
-                  isFormValid 
-                    ? 'bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 glow-red hover:glow-red-intense animate-glow-pulse' 
-                    : 'bg-secondary border border-border'
-                } ${isUpdating ? 'animate-unlock' : ''}`}
-              >
-                {isUpdating ? (
-                  <div className="flex items-center gap-3">
-                    <div className="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                    {progress || 'Processing...'}
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-3">
-                    <LockIcon className="w-6 h-6" />
-                    🔓 Pay 0.1 SOL to Hijack
-                  </div>
-                )}
-              </Button>
-
-              {!isConnected && (
-                <p className="text-center text-muted-foreground">
-                  Connect your wallet above to start the hijack
+          {/* Right Column - Hijack Form */}
+          <div className="space-y-6">
+            <Card className={`bg-card/80 backdrop-blur-sm border-border transition-all duration-300 ${isConnected ? 'border-primary/30 glow-red' : ''}`}>
+              <CardHeader>
+                <CardTitle className="text-2xl md:text-3xl flex items-center gap-3 text-glow font-space-grotesk">
+                  <Zap className="w-8 h-8 text-primary animate-pulse" />
+                  Hijack Token Metadata
+                </CardTitle>
+                <p className="text-muted-foreground text-lg">
+                  Steal the billboard. Make it yours. Leave your mark on-chain.
                 </p>
-              )}
-            </form>
-          </CardContent>
-        </Card>
+              </CardHeader>
+              
+              <CardContent>
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  <div className="grid grid-cols-1 gap-6">
+                    <FloatingLabelInput
+                      id="tokenName"
+                      label="New Token Name"
+                      value={tokenName}
+                      onChange={setTokenName}
+                      placeholder="Enter the new identity..."
+                      disabled={!isConnected || isUpdating}
+                    />
+
+                    <FloatingLabelInput
+                      id="ticker"
+                      label="New Ticker Symbol"
+                      value={ticker}
+                      onChange={setTicker}
+                      placeholder="SYMBOL"
+                      maxLength={10}
+                      disabled={!isConnected || isUpdating}
+                      transform={(value) => value.toUpperCase()}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-foreground font-medium text-lg mb-3">
+                      New Profile Picture
+                    </label>
+                    <DragDropZone
+                      onFileUpload={handleImageUpload}
+                      imagePreview={imagePreview}
+                      disabled={!isConnected || isUpdating}
+                    />
+                  </div>
+
+                  <div className="bg-secondary/30 p-6 rounded-lg border border-primary/20 neon-red">
+                    <div className="flex items-start gap-3">
+                      <AlertCircle className="w-6 h-6 text-primary mt-1 animate-pulse" />
+                      <div>
+                        <div className="text-primary font-bold text-lg mb-2">
+                          ⚡ Real On-Chain Update
+                        </div>
+                        <p className="text-muted-foreground">
+                          This hijack costs <span className="text-primary font-bold text-lg">0.1 SOL</span> to 
+                          permanently update the token metadata on Solana mainnet.
+                        </p>
+                        <div className="text-xs text-muted-foreground mt-2">
+                          • Payment required • IPFS storage • Metaplex update • Transaction verified
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Progress indicator */}
+                  {isUpdating && progress && (
+                    <div className="bg-primary/10 p-4 rounded-lg border border-primary/30">
+                      <div className="flex items-center gap-3">
+                        <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                        <span className="text-primary font-medium">{progress}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  <Button
+                    type="submit"
+                    disabled={!isFormValid || isUpdating}
+                    className={`w-full h-16 text-xl font-bold transition-all duration-300 button-unlock hover:shadow-2xl active:scale-95 ${
+                      isFormValid 
+                        ? 'bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 glow-red hover:glow-red-intense animate-glow-pulse' 
+                        : 'bg-secondary border border-border'
+                    } ${isUpdating ? 'animate-unlock' : ''}`}
+                  >
+                    {isUpdating ? (
+                      <div className="flex items-center gap-3">
+                        <div className="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                        {progress || 'Processing...'}
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-3">
+                        <LockIcon className="w-6 h-6" />
+                        🔓 Pay 0.1 SOL to Hijack
+                      </div>
+                    )}
+                  </Button>
+
+                  {!isConnected && (
+                    <p className="text-center text-muted-foreground">
+                      Connect your wallet above to start the hijack
+                    </p>
+                  )}
+                </form>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </div>
 
       <SuccessModal

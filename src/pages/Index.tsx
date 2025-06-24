@@ -33,17 +33,14 @@ const Index = () => {
             onDisconnect={handleWalletDisconnect}
           />
 
-          {/* Two Column Layout - Moved up closer to header */}
-          <div className="max-w-7xl mx-auto grid grid-cols-1 xl:grid-cols-2 gap-8 lg:gap-12 mt-8">
-            {/* Left Column - Hijack Form */}
-            <div className="space-y-6">
-              <HijackForm isConnected={isWalletConnected} />
-            </div>
-            
-            {/* Right Column - Hijack History */}
-            <div className="space-y-6">
-              <HijackHistory />
-            </div>
+          {/* Top Section - Preview and Form side by side */}
+          <div className="max-w-7xl mx-auto mt-8 mb-12">
+            <HijackForm isConnected={isWalletConnected} />
+          </div>
+
+          {/* Bottom Section - Recent Hijacks Table */}
+          <div className="max-w-7xl mx-auto">
+            <HijackHistory />
           </div>
 
           <footer className="text-center mt-20 text-muted-foreground animate-slide-up">
