@@ -21,8 +21,8 @@ const TokenPreview: React.FC<TokenPreviewProps> = ({
   const hasData = tokenName || ticker || imagePreview;
 
   return (
-    <Card className={`bg-secondary/30 border-primary/20 transition-all duration-500 ${
-      hasData ? 'animate-slide-up opacity-100' : 'opacity-50'
+    <Card className={`bg-card/90 backdrop-blur-sm border-primary/30 transition-all duration-500 glow-red ${
+      hasData ? 'animate-slide-up opacity-100' : 'opacity-90'
     } ${isSubmitting ? 'animate-unlock' : ''}`}>
       <CardContent className="p-6">
         <div className="text-center space-y-4">
@@ -31,11 +31,11 @@ const TokenPreview: React.FC<TokenPreviewProps> = ({
           </div>
           
           <div className="flex flex-col items-center space-y-4">
-            <Avatar className="w-20 h-20 border-2 border-primary/30 transition-all duration-300">
+            <Avatar className="w-20 h-20 border-2 border-primary/50 transition-all duration-300 glow-red">
               {imagePreview ? (
                 <AvatarImage src={imagePreview} alt="Token preview" className="object-cover" />
               ) : (
-                <AvatarFallback className="bg-secondary text-2xl">
+                <AvatarFallback className="bg-secondary/80 text-2xl">
                   🪙
                 </AvatarFallback>
               )}
@@ -54,18 +54,18 @@ const TokenPreview: React.FC<TokenPreviewProps> = ({
               <Button
                 variant="ghost"
                 size="sm"
-                className="w-10 h-10 p-0 border border-primary/20 hover:bg-primary/10 hover:glow-red transition-all duration-300"
+                className="w-10 h-10 p-0 border border-primary/30 hover:bg-primary/20 hover:glow-red transition-all duration-300 bg-secondary/60"
                 disabled={!hasData}
               >
-                <Twitter className="w-4 h-4" />
+                <Twitter className="w-4 h-4 text-foreground" />
               </Button>
               <Button
                 variant="ghost"
                 size="sm"
-                className="w-10 h-10 p-0 border border-primary/20 hover:bg-primary/10 hover:glow-red transition-all duration-300"
+                className="w-10 h-10 p-0 border border-primary/30 hover:bg-primary/20 hover:glow-red transition-all duration-300 bg-secondary/60"
                 disabled={!hasData}
               >
-                <MessageCircle className="w-4 h-4" />
+                <MessageCircle className="w-4 h-4 text-foreground" />
               </Button>
             </div>
             
