@@ -162,19 +162,34 @@ serve(async (req) => {
     // Use the update authority as the identity
     umi.use(signerIdentity(updateAuthoritySigner))
 
-    console.log('Uploading image to Arweave...')
+    console.log('Uploading image to Supabase Storage...')
 
-    // Upload image to Arweave via bundlr
+    // Generate unique filename for image
+    const timestamp = Date.now()
+    const imageExtension = imageFile.name.split('.').pop() || 'jpg'
+    const imageFileName = `images/${timestamp}-${userWalletAddress.slice(0, 8)}-${tokenName.replace(/\s+/g, '-').toLowerCase()}.${imageExtension}`
+
+    // Upload image to Supabase Storage
     const imageBytes = new Uint8Array(await imageFile.arrayBuffer())
-    
-    // For production, you would use a real Arweave/IPFS upload service
-    // For now, we'll simulate the upload but use a deterministic URL
-    const imageHash = await crypto.subtle.digest('SHA-256', imageBytes)
-    const imageHashArray = Array.from(new Uint8Array(imageHash))
-    const imageHashHex = imageHashArray.map(b => b.toString(16).padStart(2, '0')).join('')
-    const imageUri = `https://arweave.net/${imageHashHex.substring(0, 43)}`
+    const { data: imageUploadData, error: imageUploadError } = await supabase.storage
+      .from('token-assets')
+      .upload(imageFileName, imageBytes, {
+        contentType: imageFile.type,
+        upsert: false
+      })
 
-    console.log('Image uploaded to:', imageUri)
+    if (imageUploadError) {
+      console.error('Error uploading image:', imageUploadError)
+      throw new Error(`Failed to upload image: ${imageUploadError.message}`)
+    }
+
+    // Get public URL for the uploaded image
+    const { data: imageUrlData } = supabase.storage
+      .from('token-assets')
+      .getPublicUrl(imageFileName)
+
+    const imageUri = imageUrlData.publicUrl
+    console.log('Image uploaded to Supabase Storage:', imageUri)
 
     // Create metadata object
     const metadata = {
@@ -207,16 +222,32 @@ serve(async (req) => {
       }
     }
 
-    console.log('Uploading metadata to Arweave...')
+    console.log('Uploading metadata to Supabase Storage...')
 
-    // Upload metadata JSON to Arweave
-    const metadataBytes = new TextEncoder().encode(JSON.stringify(metadata))
-    const metadataHash = await crypto.subtle.digest('SHA-256', metadataBytes)
-    const metadataHashArray = Array.from(new Uint8Array(metadataHash))
-    const metadataHashHex = metadataHashArray.map(b => b.toString(16).padStart(2, '0')).join('')
-    const metadataUri = `https://arweave.net/${metadataHashHex.substring(0, 43)}`
+    // Generate unique filename for metadata
+    const metadataFileName = `metadata/${timestamp}-${userWalletAddress.slice(0, 8)}-${tokenName.replace(/\s+/g, '-').toLowerCase()}.json`
 
-    console.log('Metadata uploaded to:', metadataUri)
+    // Upload metadata JSON to Supabase Storage
+    const metadataBytes = new TextEncoder().encode(JSON.stringify(metadata, null, 2))
+    const { data: metadataUploadData, error: metadataUploadError } = await supabase.storage
+      .from('token-assets')
+      .upload(metadataFileName, metadataBytes, {
+        contentType: 'application/json',
+        upsert: false
+      })
+
+    if (metadataUploadError) {
+      console.error('Error uploading metadata:', metadataUploadError)
+      throw new Error(`Failed to upload metadata: ${metadataUploadError.message}`)
+    }
+
+    // Get public URL for the uploaded metadata
+    const { data: metadataUrlData } = supabase.storage
+      .from('token-assets')
+      .getPublicUrl(metadataFileName)
+
+    const metadataUri = metadataUrlData.publicUrl
+    console.log('Metadata uploaded to Supabase Storage:', metadataUri)
 
     // Fetch current metadata to verify update authority
     console.log('Fetching current token metadata...')
@@ -275,7 +306,7 @@ serve(async (req) => {
       console.error('Error updating hijack record:', updateError)
     }
 
-    console.log('Token hijack completed successfully with real on-chain update!')
+    console.log('Token hijack completed successfully with real file storage!')
 
     return new Response(
       JSON.stringify({
@@ -288,7 +319,7 @@ serve(async (req) => {
         metadataUri,
         newMetadata: metadata,
         blockTime: txDetails?.blockTime,
-        message: 'Token metadata successfully updated on-chain!'
+        message: 'Token metadata successfully updated on-chain with real file storage!'
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
