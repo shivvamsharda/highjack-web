@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -16,7 +16,7 @@ export const useWalletDatabase = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  const saveWalletConnection = async (
+  const saveWalletConnection = useCallback(async (
     walletAddress: string,
     walletType: string
   ): Promise<boolean> => {
@@ -88,9 +88,9 @@ export const useWalletDatabase = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [toast]);
 
-  const disconnectWallet = async (walletAddress: string): Promise<boolean> => {
+  const disconnectWallet = useCallback(async (walletAddress: string): Promise<boolean> => {
     setIsLoading(true);
     try {
       const { error } = await supabase
@@ -117,9 +117,9 @@ export const useWalletDatabase = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [toast]);
 
-  const getWalletConnections = async (): Promise<WalletConnection[]> => {
+  const getWalletConnections = useCallback(async (): Promise<WalletConnection[]> => {
     try {
       const { data, error } = await supabase
         .from('wallet_connections')
@@ -137,7 +137,7 @@ export const useWalletDatabase = () => {
       console.error('Database error:', error);
       return [];
     }
-  };
+  }, []);
 
   return {
     saveWalletConnection,

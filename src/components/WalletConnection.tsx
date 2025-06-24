@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { Button } from '@/components/ui/button';
@@ -25,29 +25,46 @@ const WalletConnection: React.FC<WalletConnectionProps> = ({
   const { saveWalletConnection, disconnectWallet, isLoading } = useWalletDatabase();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [isDisconnecting, setIsDisconnecting] = useState(false);
+  
+  // Track if we've already processed this connection to prevent infinite loops
+  const processedConnectionRef = useRef<string | null>(null);
 
   const isConnected = !!publicKey;
   const walletAddress = publicKey?.toBase58() || null;
 
   // Handle wallet connection changes
   useEffect(() => {
-    if (publicKey && wallet) {
-      const handleWalletConnected = async () => {
+    const handleWalletConnected = async () => {
+      if (publicKey && wallet && walletAddress) {
+        // Check if we've already processed this connection
+        if (processedConnectionRef.current === walletAddress) {
+          return;
+        }
+
+        console.log('Processing new wallet connection:', walletAddress);
+        processedConnectionRef.current = walletAddress;
+        
         const walletType = wallet.adapter.name.toLowerCase();
-        const success = await saveWalletConnection(publicKey.toBase58(), walletType);
+        const success = await saveWalletConnection(walletAddress, walletType);
         if (success) {
           legacyOnConnect(); // Update legacy state
           setIsDialogOpen(false);
           setConnectionError(null);
         }
-      };
-      
+      }
+    };
+
+    if (publicKey && wallet && !legacyIsConnected) {
       handleWalletConnected();
     } else if (!publicKey && legacyIsConnected) {
       // Wallet was disconnected
+      console.log('Wallet disconnected, clearing processed connection');
+      processedConnectionRef.current = null;
       legacyOnDisconnect();
+      setIsDisconnecting(false);
     }
-  }, [publicKey, wallet, saveWalletConnection, legacyOnConnect, legacyOnDisconnect, legacyIsConnected]);
+  }, [publicKey, wallet, legacyIsConnected, saveWalletConnection, legacyOnConnect, legacyOnDisconnect, walletAddress]);
 
   const handleConnect = async () => {
     try {
@@ -61,13 +78,17 @@ const WalletConnection: React.FC<WalletConnectionProps> = ({
 
   const handleDisconnect = async () => {
     try {
+      setIsDisconnecting(true);
       if (walletAddress) {
         await disconnectWallet(walletAddress);
       }
       await disconnect();
+      processedConnectionRef.current = null;
       legacyOnDisconnect();
     } catch (error) {
       console.error('Disconnection failed:', error);
+    } finally {
+      setIsDisconnecting(false);
     }
   };
 
@@ -108,10 +129,10 @@ const WalletConnection: React.FC<WalletConnectionProps> = ({
                 variant="outline"
                 size="sm"
                 onClick={handleDisconnect}
-                disabled={isLoading}
+                disabled={isLoading || isDisconnecting}
                 className="border-primary/30 hover:bg-primary/10 transition-all duration-300"
               >
-                {isLoading ? 'Disconnecting...' : 'Disconnect'}
+                {isDisconnecting ? 'Disconnecting...' : 'Disconnect'}
               </Button>
             </div>
           </div>
