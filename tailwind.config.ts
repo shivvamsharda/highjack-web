@@ -105,6 +105,16 @@ export default {
 						borderColor: 'rgba(239, 68, 68, 0.8)'
 					}
 				},
+				'glow-pulse-slow': {
+					'0%, 100%': { 
+						boxShadow: '0 0 20px rgba(239, 68, 68, 0.3)',
+						borderColor: 'rgba(239, 68, 68, 0.5)'
+					},
+					'50%': { 
+						boxShadow: '0 0 40px rgba(239, 68, 68, 0.6)',
+						borderColor: 'rgba(239, 68, 68, 0.8)'
+					}
+				},
 				'slide-up': {
 					'0%': { 
 						transform: 'translateY(20px)',
@@ -126,6 +136,7 @@ export default {
 				'accordion-up': 'accordion-up 0.2s ease-out',
 				'flicker': 'flicker 2s infinite',
 				'glow-pulse': 'glow-pulse 2s infinite',
+				'glow-pulse-slow': 'glow-pulse-slow 4s infinite',
 				'slide-up': 'slide-up 0.5s ease-out',
 				'unlock': 'unlock 0.3s ease-out'
 			}

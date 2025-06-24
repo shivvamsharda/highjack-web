@@ -1,4 +1,3 @@
-
 import React from 'react';
 import WalletConnection from './WalletConnection';
 import { Button } from '@/components/ui/button';
@@ -72,15 +71,11 @@ const Header: React.FC<HeaderProps> = ({
               💀 Built for chaos
             </span>
           </div>
-          <Button
-            variant="ghost"
-            onClick={scrollToRecentHijacks}
-            className="bg-secondary/50 px-3 md:px-4 py-1 md:py-2 rounded-full border border-primary/20 hover:border-primary/40 hover:bg-secondary/70 transition-all duration-300 glow-red animate-glow-pulse"
-          >
-            <span className="text-xs md:text-sm text-muted-foreground hover:text-foreground">
+          <div className="neon-red px-4 md:px-6 py-2 md:py-3 rounded-full animate-glow-pulse-slow cursor-pointer" onClick={scrollToRecentHijacks}>
+            <span className="text-primary font-bold flex items-center gap-2 text-xs md:text-sm">
               🏴‍☠️ Recent Hijacks
             </span>
-          </Button>
+          </div>
         </div>
       </div>
     </header>
