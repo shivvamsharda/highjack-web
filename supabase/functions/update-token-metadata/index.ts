@@ -2,7 +2,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
 import { Connection, Keypair, PublicKey, Transaction, SystemProgram, sendAndConfirmTransaction, LAMPORTS_PER_SOL } from 'https://esm.sh/@solana/web3.js@1.98.2'
-import { Metaplex, keypairIdentity, bundlrStorage } from 'https://esm.sh/@metaplex-foundation/js@0.20.1'
+import { Metaplex, keypairIdentity } from 'https://esm.sh/@metaplex-foundation/js@0.20.1'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -84,10 +84,9 @@ serve(async (req) => {
 
     console.log('Wallet and mint address initialized')
 
-    // Initialize Metaplex
+    // Initialize Metaplex without bundlrStorage (using default storage)
     const metaplex = Metaplex.make(connection)
       .use(keypairIdentity(walletKeypair))
-      .use(bundlrStorage())
 
     console.log('Metaplex initialized, processing image upload...')
 
@@ -95,7 +94,7 @@ serve(async (req) => {
     const imageBuffer = await imageFile.arrayBuffer()
     const imageUint8Array = new Uint8Array(imageBuffer)
 
-    // Upload image to storage (using Metaplex/Bundlr)
+    // Upload image to storage (using Metaplex default storage)
     const imageUri = await metaplex.storage().upload({
       buffer: imageUint8Array,
       fileName: `${ticker.toLowerCase()}_image.${imageFile.name.split('.').pop()}`,
