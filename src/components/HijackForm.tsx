@@ -1,8 +1,9 @@
+
 import React, { useState } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Zap, AlertCircle, Lock, Unlock, ExternalLink } from 'lucide-react';
+import { Zap, AlertCircle, Lock, Unlock, ExternalLink, CheckCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useTokenMetadata } from '@/hooks/useTokenMetadata';
 import FloatingLabelInput from './FloatingLabelInput';
@@ -91,6 +92,15 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
   const isFormValid = tokenName && ticker && imageFile && isConnected;
   const LockIcon = isFormValid ? Unlock : Lock;
 
+  // Enhanced progress indicator with finality stages
+  const getProgressIcon = () => {
+    if (progress.includes('Waiting for transaction confirmation') || 
+        progress.includes('Payment confirmed and finalized')) {
+      return <CheckCircle className="w-5 h-5 text-green-500" />;
+    }
+    return <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />;
+  };
+
   return (
     <>
       <div className={`transition-all duration-500 ${isConnected ? 'animate-slide-up' : 'opacity-60'}`}>
@@ -159,25 +169,32 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
                       <AlertCircle className="w-6 h-6 text-primary mt-1 animate-pulse" />
                       <div>
                         <div className="text-primary font-bold text-lg mb-2">
-                          ⚡ Real On-Chain Update
+                          ⚡ Enhanced Security with Transaction Finality
                         </div>
                         <p className="text-muted-foreground">
-                          This hijack costs <span className="text-primary font-bold text-lg">0.01 SOL</span> to 
-                          permanently update the token metadata on Solana mainnet.
+                          This hijack costs <span className="text-primary font-bold text-lg">0.01 SOL</span> with
+                          enhanced security verification including transaction finality checks.
                         </p>
                         <div className="text-xs text-muted-foreground mt-2">
-                          • Payment required • IPFS storage • Metaplex update • Transaction verified
+                          • 32+ confirmations required • Finality verification • Network fork protection • Payment verified
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* Progress indicator */}
+                  {/* Enhanced progress indicator */}
                   {isUpdating && progress && (
                     <div className="bg-primary/10 p-4 rounded-lg border border-primary/30">
                       <div className="flex items-center gap-3">
-                        <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-                        <span className="text-primary font-medium">{progress}</span>
+                        {getProgressIcon()}
+                        <div className="flex-1">
+                          <span className="text-primary font-medium">{progress}</span>
+                          {progress.includes('confirmation') && (
+                            <div className="text-xs text-muted-foreground mt-1">
+                              Verifying transaction finality with 32+ confirmations...
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   )}

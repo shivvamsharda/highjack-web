@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { waitForTransactionFinality } from '@/utils/transactionFinality';
 
 interface UpdateTokenMetadataParams {
   tokenName: string;
@@ -154,15 +155,29 @@ export const useTokenMetadata = () => {
 
       setProgress('Sending payment transaction...');
 
-      // Send and confirm the payment transaction
+      // Send the payment transaction
       const signature = await sendTransaction(transaction, connection);
       console.log('Payment transaction sent:', signature);
 
-      setProgress('Confirming payment...');
+      setProgress('Waiting for transaction confirmation...');
 
-      // Wait for confirmation
-      await connection.confirmTransaction(signature, 'confirmed');
-      console.log('Payment confirmed:', signature);
+      // Enhanced finality verification
+      const finalityResult = await waitForTransactionFinality(connection, signature, {
+        minConfirmations: 32,
+        maxWaitTime: 300000, // 5 minutes
+        checkInterval: 2000, // 2 seconds
+        maxAge: 300 // 5 minutes
+      });
+
+      if (!finalityResult.isFinalized) {
+        throw new Error(
+          finalityResult.error || 
+          `Transaction not finalized (confirmations: ${finalityResult.confirmations})`
+        );
+      }
+
+      console.log(`Payment finalized with ${finalityResult.confirmations} confirmations`);
+      setProgress('Payment confirmed and finalized. Processing hijack...');
 
       setProgress('Uploading files and updating metadata on-chain...');
 
