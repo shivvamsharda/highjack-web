@@ -154,49 +154,97 @@
     background: rgba(239, 68, 68, 0.7);
   }
 
-  /* Override Solana Wallet Adapter styles with higher specificity */
+  /* SUPER AGGRESSIVE Solana Wallet Adapter overrides with maximum specificity */
   .wallet-adapter-modal .wallet-adapter-button,
   .wallet-adapter-dropdown .wallet-adapter-button,
   button.wallet-adapter-button,
-  .wallet-adapter-button {
+  .wallet-adapter-button,
+  .wallet-adapter-modal .wallet-adapter-modal-button-close,
+  .wallet-adapter-modal-list .wallet-adapter-button,
+  .wallet-adapter-modal-container .wallet-adapter-button,
+  .wallet-adapter-modal-wrapper .wallet-adapter-button,
+  div[class*="wallet-adapter"] button,
+  button[class*="wallet-adapter"],
+  [class*="wallet-adapter"] button[type="button"] {
     background-color: hsl(4 84% 57%) !important;
     background: hsl(4 84% 57%) !important;
     color: hsl(0 0% 98%) !important;
     border: none !important;
+    border-color: transparent !important;
   }
 
   .wallet-adapter-modal .wallet-adapter-button:not([disabled]):hover,
   .wallet-adapter-dropdown .wallet-adapter-button:not([disabled]):hover,
   button.wallet-adapter-button:not([disabled]):hover,
-  .wallet-adapter-button:not([disabled]):hover {
+  .wallet-adapter-button:not([disabled]):hover,
+  .wallet-adapter-modal .wallet-adapter-modal-button-close:not([disabled]):hover,
+  .wallet-adapter-modal-list .wallet-adapter-button:not([disabled]):hover,
+  .wallet-adapter-modal-container .wallet-adapter-button:not([disabled]):hover,
+  .wallet-adapter-modal-wrapper .wallet-adapter-button:not([disabled]):hover,
+  div[class*="wallet-adapter"] button:not([disabled]):hover,
+  button[class*="wallet-adapter"]:not([disabled]):hover,
+  [class*="wallet-adapter"] button[type="button"]:not([disabled]):hover {
     background-color: hsl(4 84% 52%) !important;
     background: hsl(4 84% 52%) !important;
+    color: hsl(0 0% 98%) !important;
+    border-color: transparent !important;
   }
 
   .wallet-adapter-modal .wallet-adapter-button-trigger,
   .wallet-adapter-dropdown .wallet-adapter-button-trigger,
   button.wallet-adapter-button-trigger,
-  .wallet-adapter-button-trigger {
+  .wallet-adapter-button-trigger,
+  .wallet-adapter-dropdown-list .wallet-adapter-button,
+  .wallet-adapter-dropdown-list-item .wallet-adapter-button {
     background-color: hsl(4 84% 57%) !important;
     background: hsl(4 84% 57%) !important;
     color: hsl(0 0% 98%) !important;
     border: none !important;
+    border-color: transparent !important;
   }
 
   .wallet-adapter-modal .wallet-adapter-button-trigger:not([disabled]):hover,
   .wallet-adapter-dropdown .wallet-adapter-button-trigger:not([disabled]):hover,
   button.wallet-adapter-button-trigger:not([disabled]):hover,
-  .wallet-adapter-button-trigger:not([disabled]):hover {
+  .wallet-adapter-button-trigger:not([disabled]):hover,
+  .wallet-adapter-dropdown-list .wallet-adapter-button:not([disabled]):hover,
+  .wallet-adapter-dropdown-list-item .wallet-adapter-button:not([disabled]):hover {
     background-color: hsl(4 84% 52%) !important;
     background: hsl(4 84% 52%) !important;
+    color: hsl(0 0% 98%) !important;
+    border-color: transparent !important;
   }
 
-  /* Additional overrides for any purple/blue backgrounds */
+  /* Target any potential purple/blue inline styles */
   [style*="background-color: rgb(85, 60, 154)"],
   [style*="background-color: rgb(66, 153, 225)"],
   [style*="background: rgb(85, 60, 154)"],
-  [style*="background: rgb(66, 153, 225)"] {
+  [style*="background: rgb(66, 153, 225)"],
+  [style*="background-color: #553c9a"],
+  [style*="background-color: #512da8"],
+  [style*="background: #553c9a"],
+  [style*="background: #512da8"],
+  [style*="background-color: purple"],
+  [style*="background: purple"] {
     background-color: hsl(4 84% 57%) !important;
     background: hsl(4 84% 57%) !important;
+  }
+
+  /* Override any CSS-in-JS or styled-components with maximum specificity */
+  div div div button[class*="wallet"],
+  div div div div button[class*="wallet"],
+  div div div div div button[class*="wallet"] {
+    background-color: hsl(4 84% 57%) !important;
+    background: hsl(4 84% 57%) !important;
+    color: hsl(0 0% 98%) !important;
+    border-color: transparent !important;
+  }
+
+  /* Target the most common purple variations */
+  button[style*="background"],
+  button[style*="background-color"] {
+    background-color: hsl(4 84% 57%) !important;
+    background: hsl(4 84% 57%) !important;
+    color: hsl(0 0% 98%) !important;
   }
 }
