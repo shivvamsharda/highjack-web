@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
 
@@ -7,6 +8,7 @@ const rateLimitStore = new Map<string, { count: number; resetTime: number }>()
 // Allowed domains for CORS
 const ALLOWED_ORIGINS = [
   'https://36339aa0-bfe6-4f2a-96b6-00b913a168af.lovableproject.com',
+  'https://highjack.me/',
   'http://localhost:3000',
   'http://localhost:5173'
 ]
