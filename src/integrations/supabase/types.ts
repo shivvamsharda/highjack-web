@@ -69,6 +69,50 @@ export type Database = {
         }
         Relationships: []
       }
+      twitter_posts: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          hijack_id: string
+          id: string
+          posted_at: string | null
+          status: string
+          tweet_content: string
+          tweet_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          hijack_id: string
+          id?: string
+          posted_at?: string | null
+          status?: string
+          tweet_content: string
+          tweet_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          hijack_id?: string
+          id?: string
+          posted_at?: string | null
+          status?: string
+          tweet_content?: string
+          tweet_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "twitter_posts_hijack_id_fkey"
+            columns: ["hijack_id"]
+            isOneToOne: false
+            referencedRelation: "token_hijacks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       wallet_connections: {
         Row: {
           connected_at: string

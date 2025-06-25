@@ -68,7 +68,10 @@ export async function updateHijackRecordSuccess(
 
   if (updateError) {
     console.error('Error updating hijack record:', updateError)
+    throw new Error('Failed to update hijack record')
   }
+
+  console.log('Hijack record updated successfully - database trigger will handle Twitter posting')
 }
 
 export async function updateHijackRecordError(
