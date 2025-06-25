@@ -156,10 +156,21 @@
 
   /* ULTRA AGGRESSIVE Solana Wallet Adapter Modal Styling */
   
-  /* Modal container and overlay */
+  /* Modal container and overlay - REMOVE ALL RED BACKGROUNDS */
   .wallet-adapter-modal,
   .wallet-adapter-modal-overlay {
     z-index: 9999 !important;
+    background-color: rgba(0, 0, 0, 0.8) !important;
+    background: rgba(0, 0, 0, 0.8) !important;
+  }
+
+  /* MODAL WRAPPER - TARGET ALL POSSIBLE WRAPPERS */
+  .wallet-adapter-modal-wrapper,
+  .wallet-adapter-modal-wrapper[style],
+  div[class*="wallet-adapter-modal-wrapper"],
+  [class*="wallet-adapter"][class*="modal"][class*="wrapper"] {
+    background-color: transparent !important;
+    background: transparent !important;
   }
 
   .wallet-adapter-modal-container,
@@ -169,6 +180,16 @@
     border: 1px solid hsl(0 0% 15%) !important;
     border-radius: 0.75rem !important;
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.5) !important;
+  }
+
+  /* MODAL HEADER - REMOVE RED BACKGROUND */
+  .wallet-adapter-modal-header,
+  .wallet-adapter-modal-header[style],
+  div[class*="wallet-adapter-modal-header"] {
+    background-color: hsl(0 0% 8%) !important;
+    background: hsl(0 0% 8%) !important;
+    border-bottom: 1px solid hsl(0 0% 15%) !important;
+    padding: 1rem !important;
   }
 
   .wallet-adapter-modal-title {
@@ -181,6 +202,7 @@
   .wallet-adapter-modal-list {
     background-color: transparent !important;
     background: transparent !important;
+    padding: 1rem !important;
   }
 
   /* TARGET ALL POSSIBLE WALLET LIST ITEM VARIATIONS */
@@ -278,22 +300,43 @@
     font-weight: 500 !important;
   }
 
-  /* CLOSE BUTTON */
-  .wallet-adapter-modal-button-close {
-    background-color: hsl(0 0% 12%) !important;
+  /* CLOSE BUTTON (CROSS) - DARK THEME */
+  .wallet-adapter-modal-button-close,
+  .wallet-adapter-modal-button-close[style],
+  button[class*="wallet-adapter-modal-button-close"],
+  .wallet-adapter-modal .wallet-adapter-modal-button-close,
+  [class*="wallet-adapter"][class*="modal"][class*="close"],
+  .wallet-adapter-modal-header button,
+  .wallet-adapter-modal-container button[aria-label="Close"],
+  button[aria-label="Close"] {
+    background-color: hsl(0 0% 10%) !important;
+    background: hsl(0 0% 10%) !important;
     border: 1px solid hsl(0 0% 15%) !important;
     color: hsl(0 0% 65%) !important;
     border-radius: 0.375rem !important;
     padding: 0.5rem !important;
     transition: all 0.2s ease !important;
+    width: auto !important;
+    height: auto !important;
+    min-width: 2rem !important;
+    min-height: 2rem !important;
   }
 
-  .wallet-adapter-modal-button-close:hover {
+  .wallet-adapter-modal-button-close:hover,
+  .wallet-adapter-modal-button-close[style]:hover,
+  button[class*="wallet-adapter-modal-button-close"]:hover,
+  .wallet-adapter-modal .wallet-adapter-modal-button-close:hover,
+  [class*="wallet-adapter"][class*="modal"][class*="close"]:hover,
+  .wallet-adapter-modal-header button:hover,
+  .wallet-adapter-modal-container button[aria-label="Close"]:hover,
+  button[aria-label="Close"]:hover {
     background-color: hsl(0 0% 15%) !important;
+    background: hsl(0 0% 15%) !important;
     color: hsl(0 0% 95%) !important;
+    border-color: hsl(0 0% 25%) !important;
   }
 
-  /* OVERRIDE ANY INLINE STYLES WITH AGGRESSIVE SELECTORS */
+  /* NUCLEAR OPTION - Override any red/pink inline styles */
   [style*="background-color: rgb(239"],
   [style*="background-color: rgba(239"],
   [style*="background: rgb(239"],
@@ -303,22 +346,49 @@
   [style*="background-color: red"],
   [style*="background: red"],
   [style*="background-color: pink"],
-  [style*="background: pink"] {
-    background-color: hsl(0 0% 10%) !important;
-    background: hsl(0 0% 10%) !important;
+  [style*="background: pink"],
+  [style*="background-color: #ff"],
+  [style*="background: #ff"],
+  [style*="background-color: rgb(255"],
+  [style*="background: rgb(255"] {
+    background-color: hsl(0 0% 8%) !important;
+    background: hsl(0 0% 8%) !important;
   }
 
-  /* NUCLEAR OPTION - Target any element inside wallet modal with red/pink background */
-  .wallet-adapter-modal * {
+  /* OVERRIDE ANY POTENTIAL PURPLE/BLUE INLINE STYLES */
+  [style*="background-color: rgb(85, 60, 154)"],
+  [style*="background-color: rgb(66, 153, 225)"],
+  [style*="background: rgb(85, 60, 154)"],
+  [style*="background: rgb(66, 153, 225)"],
+  [style*="background-color: #553c9a"],
+  [style*="background-color: #512da8"],
+  [style*="background: #553c9a"],
+  [style*="background: #512da8"],
+  [style*="background-color: purple"],
+  [style*="background: purple"] {
+    background-color: hsl(0 0% 8%) !important;
+    background: hsl(0 0% 8%) !important;
+  }
+
+  /* NUCLEAR OPTION - Force dark backgrounds on all modal elements */
+  .wallet-adapter-modal *:not(img):not(svg):not(path) {
     background-color: inherit !important;
   }
 
-  .wallet-adapter-modal-container * {
+  .wallet-adapter-modal-container *:not(img):not(svg):not(path) {
     background-color: inherit !important;
   }
 
-  /* Re-establish the correct backgrounds after nuclear option */
+  /* Re-establish correct backgrounds after nuclear option */
+  .wallet-adapter-modal-overlay {
+    background-color: rgba(0, 0, 0, 0.8) !important;
+  }
+
   .wallet-adapter-modal-container {
+    background-color: hsl(0 0% 8%) !important;
+  }
+
+  .wallet-adapter-modal-header {
     background-color: hsl(0 0% 8%) !important;
   }
 
@@ -327,7 +397,11 @@
     background-color: hsl(0 0% 10%) !important;
   }
 
-  /* MAIN CONNECT BUTTON STYLING (outside modal) */
+  .wallet-adapter-modal-button-close {
+    background-color: hsl(0 0% 10%) !important;
+  }
+
+  /* MAIN CONNECT BUTTON STYLING (outside modal) - Keep red theme */
   .wallet-adapter-modal .wallet-adapter-button-trigger,
   .wallet-adapter-dropdown .wallet-adapter-button-trigger,
   button.wallet-adapter-button-trigger,
@@ -359,33 +433,17 @@
     border-color: transparent !important;
   }
 
-  /* TARGET ANY POTENTIAL PURPLE/BLUE INLINE STYLES */
-  [style*="background-color: rgb(85, 60, 154)"],
-  [style*="background-color: rgb(66, 153, 225)"],
-  [style*="background: rgb(85, 60, 154)"],
-  [style*="background: rgb(66, 153, 225)"],
-  [style*="background-color: #553c9a"],
-  [style*="background-color: #512da8"],
-  [style*="background: #553c9a"],
-  [style*="background: #512da8"],
-  [style*="background-color: purple"],
-  [style*="background: purple"] {
-    background-color: hsl(4 84% 57%) !important;
-    background: hsl(4 84% 57%) !important;
-  }
-
-  /* FINAL FALLBACK - Override with maximum specificity */
-  html body div div div button[class*="wallet"],
-  html body div div div div button[class*="wallet"],
-  html body div div div div div button[class*="wallet"],
-  html body div div div div div div button[class*="wallet"] {
+  /* FINAL FALLBACK - Maximum specificity override */
+  html body div div div button[class*="wallet"]:not(.wallet-adapter-modal-list button):not(.wallet-adapter-modal-list-item button),
+  html body div div div div button[class*="wallet"]:not(.wallet-adapter-modal-list button):not(.wallet-adapter-modal-list-item button),
+  html body div div div div div button[class*="wallet"]:not(.wallet-adapter-modal-list button):not(.wallet-adapter-modal-list-item button) {
     background-color: hsl(4 84% 57%) !important;
     background: hsl(4 84% 57%) !important;
     color: hsl(0 0% 98%) !important;
     border-color: transparent !important;
   }
 
-  /* But not inside the modal list */
+  /* Keep modal buttons dark */
   html body .wallet-adapter-modal-list button[class*="wallet"],
   html body .wallet-adapter-modal-list-item button[class*="wallet"],
   html body .wallet-adapter-modal li button[class*="wallet"] {
