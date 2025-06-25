@@ -11,8 +11,8 @@ const corsHeaders = {
 // Twitter API credentials from Supabase secrets
 const TWITTER_API_KEY = Deno.env.get("TWITTER_API_KEY")?.trim()
 const TWITTER_API_KEY_SECRET = Deno.env.get("TWITTER_API_KEY_SECRET")?.trim()
-const TWITTER_ACCESS_TOKEN = Deno.env.get("TWITTER_ACCESS_TOKEN")?.trim()
-const TWITTER_ACCESS_TOKEN_SECRET = Deno.env.get("TWITTER_ACCESS_TOKEN_SECRET")?.trim()
+const TWITTER_ACCESS_KEY = Deno.env.get("TWITTER_ACCESS_KEY")?.trim()
+const TWITTER_ACCESS_KEY_SECRET = Deno.env.get("TWITTER_ACCESS_KEY_SECRET")?.trim()
 
 function validateTwitterCredentials() {
   if (!TWITTER_API_KEY) {
@@ -21,11 +21,11 @@ function validateTwitterCredentials() {
   if (!TWITTER_API_KEY_SECRET) {
     throw new Error("Missing TWITTER_API_KEY_SECRET environment variable")
   }
-  if (!TWITTER_ACCESS_TOKEN) {
-    throw new Error("Missing TWITTER_ACCESS_TOKEN environment variable")
+  if (!TWITTER_ACCESS_KEY) {
+    throw new Error("Missing TWITTER_ACCESS_KEY environment variable")
   }
-  if (!TWITTER_ACCESS_TOKEN_SECRET) {
-    throw new Error("Missing TWITTER_ACCESS_TOKEN_SECRET environment variable")
+  if (!TWITTER_ACCESS_KEY_SECRET) {
+    throw new Error("Missing TWITTER_ACCESS_KEY_SECRET environment variable")
   }
 }
 
@@ -62,7 +62,7 @@ function generateOAuthHeader(method: string, url: string): string {
     oauth_nonce: Math.random().toString(36).substring(2),
     oauth_signature_method: "HMAC-SHA1",
     oauth_timestamp: Math.floor(Date.now() / 1000).toString(),
-    oauth_token: TWITTER_ACCESS_TOKEN!,
+    oauth_token: TWITTER_ACCESS_KEY!,
     oauth_version: "1.0",
   }
 
@@ -71,7 +71,7 @@ function generateOAuthHeader(method: string, url: string): string {
     url,
     oauthParams,
     TWITTER_API_KEY_SECRET!,
-    TWITTER_ACCESS_TOKEN_SECRET!
+    TWITTER_ACCESS_KEY_SECRET!
   )
 
   const signedOAuthParams = {
