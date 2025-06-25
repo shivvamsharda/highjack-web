@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Button } from '@/components/ui/button';
@@ -190,13 +191,13 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
                           </div>
                         ) : feeError ? (
                           <p className="text-red-400">
-                            Error loading fee. Using fallback: <span className="font-bold">0.1 SOL</span>
+                            Error loading fee. Using fallback: <span className="font-bold">0.10 SOL</span>
                           </p>
                         ) : feeInfo ? (
                           <div className="space-y-3">
                             <div className="flex items-center gap-2">
                               <span className="text-muted-foreground">Current hijack cost:</span>
-                              <span className="text-primary font-bold text-xl">{feeInfo.currentFee} SOL</span>
+                              <span className="text-primary font-bold text-xl">{feeInfo.currentFee.toFixed(2)} SOL</span>
                               <TrendingUp className="w-4 h-4 text-green-500" />
                             </div>
                             
@@ -248,7 +249,7 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
                     ) : (
                       <div className="flex items-center gap-3">
                         <LockIcon className="w-6 h-6" />
-                        🔓 Pay {feeInfo?.currentFee || '...'} SOL to Hijack
+                        🔓 Pay {feeInfo?.currentFee?.toFixed(2) || '...'} SOL to Hijack
                       </div>
                     )}
                   </Button>
