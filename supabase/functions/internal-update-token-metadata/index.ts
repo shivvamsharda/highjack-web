@@ -1,19 +1,454 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
-import { Connection, PublicKey } from 'https://esm.sh/@solana/web3.js@1.98.2'
-import { validateFormData, validateWalletAddress } from '../update-token-metadata/validation.ts'
-import { checkDuplicateSignature, createHijackRecord, updateHijackRecordSuccess, updateHijackRecordError } from '../update-token-metadata/database.ts'
-import { verifyPaymentTransaction } from '../update-token-metadata/payment-verification.ts'
-import { uploadImageAndMetadata } from '../update-token-metadata/storage.ts'
-import { createKeypairFromPrivateKey, updateTokenMetadata } from '../update-token-metadata/blockchain.ts'
-import { getCurrentFee, updateFeeAfterHijack, verifyPaymentAmount } from '../update-token-metadata/fee-management.ts'
+import { Connection, PublicKey, Keypair } from 'https://esm.sh/@solana/web3.js@1.98.2'
+import { createUmi } from 'https://esm.sh/@metaplex-foundation/umi-bundle-defaults@0.9.2'
+import { createSignerFromKeypair, signerIdentity } from 'https://esm.sh/@metaplex-foundation/umi@0.9.2'
+import { updateV1, fetchMetadataFromSeeds } from 'https://esm.sh/@metaplex-foundation/mpl-token-metadata@3.2.1'
+import { publicKey } from 'https://esm.sh/@metaplex-foundation/umi@0.9.2'
+import bs58 from 'https://esm.sh/bs58@5.0.0'
 
 const INTERNAL_API_KEY = Deno.env.get('INTERNAL_API_KEY') || 'fallback-internal-key'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-internal-key',
+}
+
+// Validation functions
+interface HijackFormData {
+  tokenName: string;
+  ticker: string;
+  imageFile: File;
+  userWalletAddress: string;
+  paymentSignature: string;
+}
+
+function validateFormData(formData: FormData): HijackFormData | null {
+  const tokenName = formData.get('tokenName') as string
+  const ticker = formData.get('ticker') as string
+  const imageFile = formData.get('imageFile') as File
+  const userWalletAddress = formData.get('userWalletAddress') as string
+  const paymentSignature = formData.get('paymentSignature') as string
+
+  if (!tokenName || !ticker || !imageFile || !userWalletAddress || !paymentSignature) {
+    return null
+  }
+
+  return {
+    tokenName,
+    ticker,
+    imageFile,
+    userWalletAddress,
+    paymentSignature
+  }
+}
+
+function validateWalletAddress(address: string): boolean {
+  try {
+    new PublicKey(address)
+    return true
+  } catch {
+    return false
+  }
+}
+
+// Database functions
+interface HijackRecord {
+  id: string;
+  wallet_address: string;
+  token_name: string;
+  ticker_symbol: string;
+  image_file_name: string;
+  image_file_size: number;
+  image_file_type: string;
+  status: string;
+  transaction_signature: string;
+}
+
+async function checkDuplicateSignature(
+  supabase: ReturnType<typeof createClient>,
+  signature: string
+): Promise<boolean> {
+  const { data, error } = await supabase
+    .from('hijack_attempts')
+    .select('id')
+    .eq('transaction_signature', signature)
+    .single()
+
+  if (error && error.code !== 'PGRST116') {
+    console.error('Error checking duplicate signature:', error)
+    throw new Error('Failed to check transaction signature')
+  }
+
+  return !!data
+}
+
+async function createHijackRecord(
+  supabase: ReturnType<typeof createClient>,
+  data: HijackFormData & { feePaidSol: number }
+): Promise<HijackRecord> {
+  const hijackRecord = {
+    wallet_address: data.userWalletAddress,
+    token_name: data.tokenName,
+    ticker_symbol: data.ticker,
+    image_file_name: data.imageFile.name,
+    image_file_size: data.imageFile.size,
+    image_file_type: data.imageFile.type,
+    status: 'processing',
+    transaction_signature: data.paymentSignature,
+    fee_paid_sol: data.feePaidSol
+  }
+
+  const { data: record, error } = await supabase
+    .from('hijack_attempts')
+    .insert(hijackRecord)
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Error creating hijack record:', error)
+    throw new Error('Failed to create hijack record')
+  }
+
+  return record
+}
+
+async function updateHijackRecordSuccess(
+  supabase: ReturnType<typeof createClient>,
+  recordId: string,
+  explorerUrl: string,
+  imageUri: string,
+  metadataUri: string,
+  metadata: any,
+  blockTime?: number
+): Promise<void> {
+  const { error } = await supabase
+    .from('hijack_attempts')
+    .update({
+      status: 'completed',
+      explorer_url: explorerUrl,
+      image_uri: imageUri,
+      metadata_uri: metadataUri,
+      metadata_json: metadata,
+      completed_at: new Date().toISOString(),
+      block_time: blockTime
+    })
+    .eq('id', recordId)
+
+  if (error) {
+    console.error('Error updating hijack record with success:', error)
+    throw new Error('Failed to update hijack record')
+  }
+}
+
+async function updateHijackRecordError(
+  supabase: ReturnType<typeof createClient>,
+  recordId: string,
+  errorMessage: string
+): Promise<void> {
+  const { error } = await supabase
+    .from('hijack_attempts')
+    .update({
+      status: 'failed',
+      error_message: errorMessage
+    })
+    .eq('id', recordId)
+
+  if (error) {
+    console.error('Error updating hijack record with error:', error)
+  }
+}
+
+// Payment verification
+async function verifyPaymentTransaction(
+  connection: Connection,
+  signature: string,
+  senderAddress: string,
+  treasuryWallet: PublicKey
+): Promise<{ isValid: boolean; error?: string; blockTime?: number }> {
+  try {
+    const txDetails = await connection.getTransaction(signature, {
+      commitment: 'finalized'
+    })
+
+    if (!txDetails) {
+      return { isValid: false, error: 'Transaction not found or not finalized' }
+    }
+
+    if (!txDetails.meta || txDetails.meta.err) {
+      return { isValid: false, error: 'Transaction failed or has no metadata' }
+    }
+
+    const senderPubkey = new PublicKey(senderAddress)
+    const accountKeys = txDetails.transaction.message.accountKeys
+
+    let senderIndex = -1
+    let treasuryIndex = -1
+
+    for (let i = 0; i < accountKeys.length; i++) {
+      if (accountKeys[i].equals(senderPubkey)) {
+        senderIndex = i
+      }
+      if (accountKeys[i].equals(treasuryWallet)) {
+        treasuryIndex = i
+      }
+    }
+
+    if (senderIndex === -1) {
+      return { isValid: false, error: 'Sender wallet not found in transaction' }
+    }
+
+    if (treasuryIndex === -1) {
+      return { isValid: false, error: 'Treasury wallet not found in transaction' }
+    }
+
+    const preBalances = txDetails.meta.preBalances
+    const postBalances = txDetails.meta.postBalances
+
+    const senderBalanceChange = preBalances[senderIndex] - postBalances[senderIndex]
+    const treasuryBalanceChange = postBalances[treasuryIndex] - preBalances[treasuryIndex]
+
+    if (senderBalanceChange <= 0 || treasuryBalanceChange <= 0) {
+      return { isValid: false, error: 'No valid payment transfer detected' }
+    }
+
+    return { 
+      isValid: true, 
+      blockTime: txDetails.blockTime || undefined
+    }
+  } catch (error) {
+    console.error('Error verifying payment transaction:', error)
+    return { isValid: false, error: 'Failed to verify transaction' }
+  }
+}
+
+// Fee management
+interface FeeInfo {
+  currentFee: number;
+  id: string;
+}
+
+async function getCurrentFee(
+  supabase: ReturnType<typeof createClient>
+): Promise<FeeInfo> {
+  const { data: pricing, error } = await supabase
+    .from('hijack_pricing')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single()
+
+  if (error) {
+    console.error('Error fetching current fee:', error)
+    return { currentFee: 0.1, id: '' }
+  }
+
+  return {
+    currentFee: Number(pricing.current_fee_sol),
+    id: pricing.id
+  }
+}
+
+async function updateFeeAfterHijack(
+  supabase: ReturnType<typeof createClient>,
+  pricingId: string,
+  currentFee: number
+): Promise<void> {
+  const newFee = currentFee + 0.1
+  const now = new Date().toISOString()
+
+  console.log(`Updating fee from ${currentFee} to ${newFee} SOL after successful hijack`)
+
+  const { error } = await supabase
+    .from('hijack_pricing')
+    .update({
+      current_fee_sol: newFee,
+      last_hijack_at: now,
+      last_fee_update_at: now
+    })
+    .eq('id', pricingId)
+
+  if (error) {
+    console.error('Error updating fee after hijack:', error)
+    throw new Error('Failed to update hijack fee')
+  }
+
+  console.log(`Fee successfully updated to ${newFee} SOL`)
+}
+
+function verifyPaymentAmount(
+  paymentAmount: number,
+  expectedFee: number,
+  tolerance: number = 0.001
+): boolean {
+  const difference = Math.abs(paymentAmount - expectedFee)
+  const isValid = difference <= tolerance
+  
+  console.log(`Payment verification: expected ${expectedFee} SOL, received ${paymentAmount} SOL, difference: ${difference}, valid: ${isValid}`)
+  
+  return isValid
+}
+
+// Storage functions
+async function uploadImageAndMetadata(
+  supabase: ReturnType<typeof createClient>,
+  imageFile: File,
+  tokenName: string,
+  ticker: string,
+  userWalletAddress: string
+): Promise<{ imageUri: string; metadataUri: string; metadata: any }> {
+  console.log('Uploading image to Supabase Storage...')
+
+  const timestamp = Date.now()
+  const imageExtension = imageFile.name.split('.').pop() || 'jpg'
+  const imageFileName = `images/${timestamp}-${userWalletAddress.slice(0, 8)}-${tokenName.replace(/\s+/g, '-').toLowerCase()}.${imageExtension}`
+
+  const imageBytes = new Uint8Array(await imageFile.arrayBuffer())
+  const { data: imageUploadData, error: imageUploadError } = await supabase.storage
+    .from('token-assets')
+    .upload(imageFileName, imageBytes, {
+      contentType: imageFile.type,
+      upsert: false
+    })
+
+  if (imageUploadError) {
+    console.error('Error uploading image:', imageUploadError)
+    throw new Error(`Failed to upload image: ${imageUploadError.message}`)
+  }
+
+  const { data: imageUrlData } = supabase.storage
+    .from('token-assets')
+    .getPublicUrl(imageFileName)
+
+  const imageUri = imageUrlData.publicUrl
+  console.log('Image uploaded to Supabase Storage:', imageUri)
+
+  const metadata = {
+    name: tokenName,
+    symbol: ticker.toUpperCase(),
+    description: `${tokenName} (${ticker}) - Token hijacked on Solana`,
+    image: imageUri,
+    attributes: [
+      {
+        trait_type: "Hijacked",
+        value: "Yes"
+      },
+      {
+        trait_type: "Original Hijacker", 
+        value: userWalletAddress
+      },
+      {
+        trait_type: "Hijack Date",
+        value: new Date().toISOString()
+      }
+    ],
+    properties: {
+      files: [
+        {
+          uri: imageUri,
+          type: imageFile.type,
+        }
+      ],
+      category: "image",
+    }
+  }
+
+  console.log('Uploading metadata to Supabase Storage...')
+
+  const metadataFileName = `metadata/${timestamp}-${userWalletAddress.slice(0, 8)}-${tokenName.replace(/\s+/g, '-').toLowerCase()}.json`
+
+  const metadataBytes = new TextEncoder().encode(JSON.stringify(metadata, null, 2))
+  const { data: metadataUploadData, error: metadataUploadError } = await supabase.storage
+    .from('token-assets')
+    .upload(metadataFileName, metadataBytes, {
+      contentType: 'application/json',
+      upsert: false
+    })
+
+  if (metadataUploadError) {
+    console.error('Error uploading metadata:', metadataUploadError)
+    throw new Error(`Failed to upload metadata: ${metadataUploadError.message}`)
+  }
+
+  const { data: metadataUrlData } = supabase.storage
+    .from('token-assets')
+    .getPublicUrl(metadataFileName)
+
+  const metadataUri = metadataUrlData.publicUrl
+  console.log('Metadata uploaded to Supabase Storage:', metadataUri)
+
+  return { imageUri, metadataUri, metadata }
+}
+
+// Blockchain functions
+function createKeypairFromPrivateKey(walletKeyStr: string): Keypair {
+  let privateKeyBytes: Uint8Array
+  if (walletKeyStr.startsWith('[') && walletKeyStr.endsWith(']')) {
+    const keyArray = JSON.parse(walletKeyStr)
+    privateKeyBytes = new Uint8Array(keyArray)
+  } else {
+    privateKeyBytes = bs58.decode(walletKeyStr)
+  }
+  return Keypair.fromSecretKey(privateKeyBytes)
+}
+
+async function updateTokenMetadata(
+  rpcUrl: string,
+  mintAddress: PublicKey,
+  updateAuthorityKeypair: Keypair,
+  tokenName: string,
+  ticker: string,
+  metadataUri: string
+): Promise<string> {
+  console.log('Initializing Metaplex Umi...')
+  const umi = createUmi(rpcUrl)
+  
+  console.log('Update authority address:', updateAuthorityKeypair.publicKey.toBase58())
+
+  const updateAuthoritySigner = createSignerFromKeypair(umi, {
+    publicKey: publicKey(updateAuthorityKeypair.publicKey.toBase58()),
+    secretKey: updateAuthorityKeypair.secretKey
+  })
+
+  umi.use(signerIdentity(updateAuthoritySigner))
+
+  console.log('Fetching current token metadata...')
+  const mintPublicKey = publicKey(mintAddress.toBase58())
+  const currentMetadata = await fetchMetadataFromSeeds(umi, { mint: mintPublicKey })
+
+  if (!currentMetadata) {
+    throw new Error('Token metadata not found on-chain')
+  }
+
+  console.log('Current update authority:', currentMetadata.updateAuthority)
+  console.log('Our update authority:', updateAuthoritySigner.publicKey)
+
+  if (currentMetadata.updateAuthority !== updateAuthoritySigner.publicKey) {
+    throw new Error(`Update authority mismatch. Expected: ${updateAuthoritySigner.publicKey}, Got: ${currentMetadata.updateAuthority}`)
+  }
+
+  console.log('Updating token metadata on-chain...')
+
+  const updateResult = await updateV1(umi, {
+    mint: mintPublicKey,
+    authority: updateAuthoritySigner,
+    data: {
+      name: tokenName,
+      symbol: ticker.toUpperCase(),
+      uri: metadataUri,
+      sellerFeeBasisPoints: currentMetadata.sellerFeeBasisPoints,
+      creators: currentMetadata.creators,
+      collection: currentMetadata.collection,
+      uses: currentMetadata.uses,
+    },
+  }).sendAndConfirm(umi)
+
+  const updateTransactionSignatureString = bs58.encode(updateResult.signature)
+  
+  console.log('Metadata update transaction signature:', updateTransactionSignatureString)
+
+  return updateTransactionSignatureString
 }
 
 serve(async (req) => {
