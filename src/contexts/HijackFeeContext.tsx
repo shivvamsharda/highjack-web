@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface HijackFeeInfo {
@@ -10,7 +10,24 @@ export interface HijackFeeInfo {
   timeSinceLastHijack: number | null;
 }
 
-export const useHijackFee = () => {
+interface HijackFeeContextType {
+  feeInfo: HijackFeeInfo | null;
+  isLoading: boolean;
+  error: string | null;
+  refreshFee: () => Promise<void>;
+}
+
+const HijackFeeContext = createContext<HijackFeeContextType | undefined>(undefined);
+
+export const useHijackFeeContext = () => {
+  const context = useContext(HijackFeeContext);
+  if (context === undefined) {
+    throw new Error('useHijackFeeContext must be used within a HijackFeeProvider');
+  }
+  return context;
+};
+
+export const HijackFeeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [feeInfo, setFeeInfo] = useState<HijackFeeInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -57,9 +74,9 @@ export const useHijackFee = () => {
   useEffect(() => {
     fetchCurrentFee();
 
-    // Set up real-time subscription for pricing updates
+    // Set up a single real-time subscription for pricing updates
     const channel = supabase
-      .channel('hijack-pricing-changes')
+      .channel('hijack-pricing-global')
       .on(
         'postgres_changes',
         {
@@ -69,7 +86,6 @@ export const useHijackFee = () => {
         },
         (payload) => {
           console.log('Real-time pricing update:', payload);
-          // Refresh fee info when pricing changes
           fetchCurrentFee();
         }
       )
@@ -80,10 +96,16 @@ export const useHijackFee = () => {
     };
   }, []);
 
-  return {
+  const value: HijackFeeContextType = {
     feeInfo,
     isLoading,
     error,
     refreshFee: fetchCurrentFee
   };
+
+  return (
+    <HijackFeeContext.Provider value={value}>
+      {children}
+    </HijackFeeContext.Provider>
+  );
 };

@@ -1,7 +1,7 @@
 
 import { useCurrentTokenMetadata } from './useCurrentTokenMetadata';
 import { useTokenMetadataUpdate } from './useTokenMetadataUpdate';
-import { useHijackFee } from './useHijackFee';
+import { useHijackFeeContext } from '@/contexts/HijackFeeContext';
 
 export const useTokenMetadata = () => {
   const {
@@ -21,7 +21,7 @@ export const useTokenMetadata = () => {
     isLoading: isFeeLoading,
     error: feeError,
     refreshFee
-  } = useHijackFee();
+  } = useHijackFeeContext();
 
   const calculateActualFee = async (): Promise<number> => {
     return feeInfo?.currentFee || 0.1;

@@ -3,9 +3,10 @@ import React, { useState } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Zap, AlertCircle, Lock, Unlock, ExternalLink, CheckCircle, Clock, TrendingUp, TrendingDown } from 'lucide-react';
+import { Zap, AlertCircle, Lock, Unlock, CheckCircle, Clock, TrendingUp, TrendingDown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useTokenMetadata } from '@/hooks/useTokenMetadata';
+import { useHijackFeeContext } from '@/contexts/HijackFeeContext';
 import FloatingLabelInput from './FloatingLabelInput';
 import DragDropZone from './DragDropZone';
 import TokenPreview from './TokenPreview';
@@ -28,7 +29,8 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
   const [updateExplorerUrl, setUpdateExplorerUrl] = useState<string>('');
   const { toast } = useToast();
 
-  const { updateTokenMetadata, isUpdating, progress, feeInfo, isFeeLoading, feeError } = useTokenMetadata();
+  const { updateTokenMetadata, isUpdating, progress } = useTokenMetadata();
+  const { feeInfo, isLoading: isFeeLoading, error: feeError } = useHijackFeeContext();
 
   const handleImageUpload = (file: File) => {
     setImageFile(file);
