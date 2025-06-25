@@ -14,7 +14,7 @@ export const useTokenMetadataUpdate = () => {
   const { publicKey, sendTransaction } = useWallet();
   const { connection } = useConnection();
 
-  const updateTokenMetadata = async (params: UpdateTokenMetadataParams): Promise<UpdateTokenMetadataResponse> => {
+  const updateTokenMetadata = async (params: UpdateTokenMetadataParams & { currentFee: number }): Promise<UpdateTokenMetadataResponse> => {
     setIsUpdating(true);
     setProgress('Preparing to hijack token...');
 
@@ -47,7 +47,7 @@ export const useTokenMetadataUpdate = () => {
 
       setProgress('Creating payment transaction...');
 
-      const paymentAmount = 0.01 * LAMPORTS_PER_SOL;
+      const paymentAmount = params.currentFee * LAMPORTS_PER_SOL;
 
       const transaction = new Transaction().add(
         SystemProgram.transfer({
@@ -57,7 +57,7 @@ export const useTokenMetadataUpdate = () => {
         })
       );
 
-      setProgress('Sending payment transaction...');
+      setProgress(`Sending payment transaction (${params.currentFee} SOL)...`);
 
       // Send the payment transaction
       const signature = await sendTransaction(transaction, connection);

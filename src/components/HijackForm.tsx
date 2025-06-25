@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Zap, AlertCircle, Lock, Unlock, ExternalLink, CheckCircle } from 'lucide-react';
+import { Zap, AlertCircle, Lock, Unlock, ExternalLink, CheckCircle, Clock, TrendingUp, TrendingDown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useTokenMetadata } from '@/hooks/useTokenMetadata';
 import FloatingLabelInput from './FloatingLabelInput';
@@ -28,7 +28,7 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
   const [updateExplorerUrl, setUpdateExplorerUrl] = useState<string>('');
   const { toast } = useToast();
 
-  const { updateTokenMetadata, isUpdating, progress } = useTokenMetadata();
+  const { updateTokenMetadata, isUpdating, progress, feeInfo, isFeeLoading, feeError } = useTokenMetadata();
 
   const handleImageUpload = (file: File) => {
     setImageFile(file);
@@ -60,11 +60,21 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
       return;
     }
 
+    if (!feeInfo) {
+      toast({
+        title: "Fee Loading",
+        description: "Please wait for the current fee to load.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const result = await updateTokenMetadata({
       tokenName,
       ticker,
       imageFile,
-      userWalletAddress: publicKey.toBase58()
+      userWalletAddress: publicKey.toBase58(),
+      currentFee: feeInfo.currentFee
     });
 
     if (result.success && result.transactionSignature) {
@@ -89,7 +99,7 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
     setUpdateExplorerUrl('');
   };
 
-  const isFormValid = tokenName && ticker && imageFile && isConnected;
+  const isFormValid = tokenName && ticker && imageFile && isConnected && feeInfo;
   const LockIcon = isFormValid ? Unlock : Lock;
 
   // Enhanced progress indicator with finality stages
@@ -99,6 +109,20 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
       return <CheckCircle className="w-5 h-5 text-green-500" />;
     }
     return <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />;
+  };
+
+  // Format countdown timer
+  const formatCountdown = (minutes: number | null) => {
+    if (minutes === null) return 'No recent hijacks';
+    if (minutes === 0) return 'Fee decrease imminent!';
+    
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    
+    if (hours > 0) {
+      return `${hours}h ${mins}m until fee decrease`;
+    }
+    return `${mins}m until fee decrease`;
   };
 
   return (
@@ -164,19 +188,51 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
                     />
                   </div>
 
+                  {/* Dynamic Fee Display */}
                   <div className="bg-secondary/30 p-6 rounded-lg border border-primary/20 neon-red">
                     <div className="flex items-start gap-3">
                       <AlertCircle className="w-6 h-6 text-primary mt-1 animate-pulse" />
-                      <div>
+                      <div className="flex-1">
                         <div className="text-primary font-bold text-lg mb-2">
-                          ⚡ Enhanced Security with Transaction Finality
+                          ⚡ Dynamic Hijack Pricing
                         </div>
-                        <p className="text-muted-foreground">
-                          This hijack costs <span className="text-primary font-bold text-lg">0.01 SOL</span> with
-                          enhanced security verification including transaction finality checks.
-                        </p>
+                        
+                        {isFeeLoading ? (
+                          <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                            <span className="text-muted-foreground">Loading current fee...</span>
+                          </div>
+                        ) : feeError ? (
+                          <p className="text-red-400">
+                            Error loading fee. Using fallback: <span className="font-bold">0.1 SOL</span>
+                          </p>
+                        ) : feeInfo ? (
+                          <div className="space-y-3">
+                            <div className="flex items-center gap-2">
+                              <span className="text-muted-foreground">Current hijack cost:</span>
+                              <span className="text-primary font-bold text-xl">{feeInfo.currentFee} SOL</span>
+                              <TrendingUp className="w-4 h-4 text-green-500" />
+                            </div>
+                            
+                            <div className="flex items-center gap-2">
+                              <span className="text-muted-foreground">Next hijack will cost:</span>
+                              <span className="text-orange-400 font-bold">{feeInfo.nextFeeAfterHijack} SOL</span>
+                            </div>
+
+                            {feeInfo.nextDecreaseIn !== null && (
+                              <div className="flex items-center gap-2">
+                                <Clock className="w-4 h-4 text-blue-400" />
+                                <span className="text-blue-400 text-sm">
+                                  {formatCountdown(feeInfo.nextDecreaseIn)}
+                                </span>
+                                {feeInfo.nextDecreaseIn > 0 && <TrendingDown className="w-4 h-4 text-blue-400" />}
+                              </div>
+                            )}
+                          </div>
+                        ) : null}
+                        
                         <div className="text-xs text-muted-foreground mt-2">
-                          • 32+ confirmations required • Finality verification • Network fork protection • Payment verified
+                          • Fee increases by 0.1 SOL after each hijack • Decreases by 0.1 SOL every hour without hijacks • Minimum fee: 0.1 SOL
                         </div>
                       </div>
                     </div>
@@ -216,7 +272,7 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
                     ) : (
                       <div className="flex items-center gap-3">
                         <LockIcon className="w-6 h-6" />
-                        🔓 Pay 0.01 SOL to Hijack
+                        🔓 Pay {feeInfo?.currentFee || '...'} SOL to Hijack
                       </div>
                     )}
                   </Button>

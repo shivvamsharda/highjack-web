@@ -1,6 +1,7 @@
 
 import { useCurrentTokenMetadata } from './useCurrentTokenMetadata';
 import { useTokenMetadataUpdate } from './useTokenMetadataUpdate';
+import { useHijackFee } from './useHijackFee';
 
 export const useTokenMetadata = () => {
   const {
@@ -15,15 +16,23 @@ export const useTokenMetadata = () => {
     progress
   } = useTokenMetadataUpdate();
 
+  const {
+    feeInfo,
+    isLoading: isFeeLoading,
+    error: feeError,
+    refreshFee
+  } = useHijackFee();
+
   const calculateActualFee = async (): Promise<number> => {
-    return 0.01;
+    return feeInfo?.currentFee || 0.1;
   };
 
-  // Refresh current metadata after successful update
+  // Refresh current metadata and fee after successful update
   const updateTokenMetadataWithRefresh = async (params: Parameters<typeof updateTokenMetadata>[0]) => {
     const result = await updateTokenMetadata(params);
     if (result.success) {
       await fetchCurrentTokenMetadata();
+      await refreshFee();
     }
     return result;
   };
@@ -35,6 +44,10 @@ export const useTokenMetadata = () => {
     isUpdating,
     isFetchingCurrent,
     progress,
-    currentMetadata
+    currentMetadata,
+    feeInfo,
+    isFeeLoading,
+    feeError,
+    refreshFee
   };
 };

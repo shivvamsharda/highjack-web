@@ -7,6 +7,7 @@ import { checkDuplicateSignature, createHijackRecord, updateHijackRecordSuccess,
 import { verifyPaymentTransaction } from './payment-verification.ts'
 import { uploadImageAndMetadata } from './storage.ts'
 import { createKeypairFromPrivateKey, updateTokenMetadata } from './blockchain.ts'
+import { getCurrentFee, updateFeeAfterHijack, verifyPaymentAmount } from './fee-management.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -27,7 +28,7 @@ serve(async (req) => {
   let hijackRecordId: string | null = null
 
   try {
-    console.log('Starting real token metadata update process...')
+    console.log('Starting dynamic pricing token metadata update process...')
     
     const formData = await req.formData()
     const validatedData = validateFormData(formData)
@@ -46,6 +47,12 @@ serve(async (req) => {
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       )
     }
+
+    console.log('Getting current hijack fee...')
+    
+    // Get current fee
+    const feeInfo = await getCurrentFee(supabase)
+    console.log(`Current hijack fee: ${feeInfo.currentFee} SOL`)
 
     console.log('Checking for duplicate transaction signature...')
 
@@ -100,8 +107,72 @@ serve(async (req) => {
       )
     }
 
-    // Create initial hijack record in database
-    const hijackRecord = await createHijackRecord(supabase, validatedData)
+    // Get transaction details to verify payment amount
+    console.log('Verifying payment amount against current fee...')
+    
+    let txDetails
+    try {
+      txDetails = await connection.getTransaction(validatedData.paymentSignature, {
+        commitment: 'finalized'
+      })
+    } catch (error) {
+      console.error('Error fetching transaction for amount verification:', error)
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          error: 'Failed to verify payment amount'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 403 }
+      )
+    }
+
+    if (!txDetails) {
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          error: 'Payment transaction not found for amount verification'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 403 }
+      )
+    }
+
+    // Extract payment amount from transaction
+    const preBalances = txDetails.meta?.preBalances || []
+    const postBalances = txDetails.meta?.postBalances || []
+    
+    if (preBalances.length < 2 || postBalances.length < 2) {
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          error: 'Unable to verify payment amount from transaction'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 403 }
+      )
+    }
+
+    // Calculate actual payment amount (in SOL)
+    const senderBalanceChange = (preBalances[0] - postBalances[0]) / 1_000_000_000 // Convert lamports to SOL
+    const actualPaymentAmount = senderBalanceChange - (txDetails.meta?.fee || 0) / 1_000_000_000 // Subtract transaction fee
+    
+    console.log(`Payment amount verification: expected ${feeInfo.currentFee} SOL, actual ${actualPaymentAmount} SOL`)
+
+    // Verify payment amount matches current fee
+    if (!verifyPaymentAmount(actualPaymentAmount, feeInfo.currentFee)) {
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          error: `Incorrect payment amount. Expected ${feeInfo.currentFee} SOL, received ${actualPaymentAmount} SOL`,
+          details: 'The payment amount does not match the current hijack fee'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 403 }
+      )
+    }
+
+    // Create initial hijack record in database with fee paid
+    const hijackRecord = await createHijackRecord(supabase, {
+      ...validatedData,
+      feePaidSol: feeInfo.currentFee
+    })
     hijackRecordId = hijackRecord.id
     console.log('Created hijack record:', hijackRecordId)
 
@@ -147,7 +218,10 @@ serve(async (req) => {
       paymentVerification.blockTime
     )
 
-    console.log('Token hijack completed successfully with real file storage!')
+    // Update fee after successful hijack
+    await updateFeeAfterHijack(supabase, feeInfo.id, feeInfo.currentFee)
+
+    console.log('Token hijack completed successfully with dynamic pricing!')
 
     return new Response(
       JSON.stringify({
@@ -160,7 +234,9 @@ serve(async (req) => {
         metadataUri: uploadResult.metadataUri,
         newMetadata: uploadResult.metadata,
         blockTime: paymentVerification.blockTime,
-        message: 'Token metadata successfully updated on-chain with real file storage!'
+        feePaid: feeInfo.currentFee,
+        nextFee: feeInfo.currentFee + 0.1,
+        message: `Token metadata successfully updated! Fee was ${feeInfo.currentFee} SOL, next hijack will cost ${feeInfo.currentFee + 0.1} SOL`
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )

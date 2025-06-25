@@ -9,12 +9,40 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      hijack_pricing: {
+        Row: {
+          created_at: string
+          current_fee_sol: number
+          id: string
+          last_fee_update_at: string
+          last_hijack_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          current_fee_sol?: number
+          id?: string
+          last_fee_update_at?: string
+          last_hijack_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          current_fee_sol?: number
+          id?: string
+          last_fee_update_at?: string
+          last_hijack_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       token_hijacks: {
         Row: {
           block_time: number | null
           created_at: string
           error_message: string | null
           explorer_url: string | null
+          fee_paid_sol: number | null
           id: string
           image_file_name: string | null
           image_file_size: number | null
@@ -34,6 +62,7 @@ export type Database = {
           created_at?: string
           error_message?: string | null
           explorer_url?: string | null
+          fee_paid_sol?: number | null
           id?: string
           image_file_name?: string | null
           image_file_size?: number | null
@@ -53,6 +82,7 @@ export type Database = {
           created_at?: string
           error_message?: string | null
           explorer_url?: string | null
+          fee_paid_sol?: number | null
           id?: string
           image_file_name?: string | null
           image_file_size?: number | null

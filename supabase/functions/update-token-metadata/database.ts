@@ -21,7 +21,7 @@ export async function checkDuplicateSignature(
 
 export async function createHijackRecord(
   supabase: ReturnType<typeof createClient>,
-  formData: HijackFormData
+  formData: HijackFormData & { feePaidSol: number }
 ): Promise<HijackRecord> {
   const { data: hijackRecord, error: insertError } = await supabase
     .from('token_hijacks')
@@ -33,7 +33,8 @@ export async function createHijackRecord(
       image_file_size: formData.imageFile.size,
       image_file_type: formData.imageFile.type,
       status: 'processing',
-      transaction_signature: formData.paymentSignature
+      transaction_signature: formData.paymentSignature,
+      fee_paid_sol: formData.feePaidSol
     })
     .select()
     .single()
