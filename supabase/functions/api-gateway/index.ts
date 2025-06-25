@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
 
@@ -17,10 +16,10 @@ const INTERNAL_API_KEY = Deno.env.get('INTERNAL_API_KEY') || 'fallback-internal-
 
 // Rate limiting configuration
 const RATE_LIMITS = {
-  'get-token-metadata': { requests: 4, window: 60 }, // 4 per minute (wallet-specific)
+  'get-token-metadata': { requests: 100, window: 3600 }, // 100 per hour
   'get-hijack-fee': { requests: 200, window: 3600 }, // 200 per hour
   'get-treasury-wallet': { requests: 50, window: 3600 }, // 50 per hour
-  'update-token-metadata': { requests: 5, window: 3600 } // 5 per hour (strict for hijacking)
+  'update-token-metadata': { requests: 4, window: 60 } // 4 per minute (wallet-specific)
 }
 
 // Rate limiting check
@@ -186,16 +185,30 @@ serve(async (req) => {
     
     console.log('Extracted endpoint:', endpoint)
     
-    // Get client identifier for rate limiting - wallet-specific for get-token-metadata
+    // Get client identifier for rate limiting - wallet-specific for update-token-metadata
     let clientId: string
-    if (endpoint === 'get-token-metadata') {
-      // For metadata endpoint, use wallet address if provided, otherwise fall back to IP
-      const walletAddress = url.searchParams.get('wallet')
+    if (endpoint === 'update-token-metadata') {
+      // For metadata update endpoint, extract wallet from form data or use IP as fallback
+      let walletAddress: string | null = null
+      
+      // Try to get wallet address from form data for POST requests
+      if (req.method === 'POST') {
+        try {
+          const formData = await req.formData()
+          walletAddress = formData.get('userWalletAddress') as string
+        } catch {
+          // If formData parsing fails, fall back to query params or IP
+          walletAddress = url.searchParams.get('wallet')
+        }
+      } else {
+        walletAddress = url.searchParams.get('wallet')
+      }
+      
       if (!walletAddress) {
         return new Response(
           JSON.stringify({ 
-            error: 'Wallet address required for metadata endpoint',
-            details: 'Please provide wallet address as query parameter'
+            error: 'Wallet address required for metadata update endpoint',
+            details: 'Please provide wallet address in form data or as query parameter'
           }),
           { 
             status: 400,
@@ -206,20 +219,20 @@ serve(async (req) => {
       clientId = walletAddress
       console.log('Using wallet address for rate limiting:', walletAddress)
     } else {
-      // For other endpoints, use IP address
+      // For other endpoints, use IP address or wallet if provided
       const clientIP = req.headers.get('x-forwarded-for') || 'unknown'
       const walletAddress = url.searchParams.get('wallet') || clientIP
       clientId = walletAddress
     }
     
-    // Rate limiting check - now enforced for metadata endpoint
-    if (endpoint === 'get-token-metadata') {
+    // Rate limiting check - now enforced for update-token-metadata endpoint
+    if (endpoint === 'update-token-metadata') {
       if (!checkRateLimit(clientId, endpoint)) {
         console.log('Rate limit exceeded for wallet:', clientId, endpoint)
         return new Response(
           JSON.stringify({ 
             error: 'Rate limit exceeded',
-            details: 'Maximum 4 requests per minute per wallet address for metadata endpoint'
+            details: 'Maximum 4 requests per minute per wallet address for metadata update endpoint'
           }),
           { 
             status: 429,
