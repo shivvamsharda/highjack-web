@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Zap, AlertCircle, Lock, Unlock, CheckCircle, Clock, TrendingUp, TrendingDown } from 'lucide-react';
+import { Zap, AlertCircle, Lock, Unlock, CheckCircle, TrendingUp } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useTokenMetadata } from '@/hooks/useTokenMetadata';
 import { useHijackFeeContext } from '@/contexts/HijackFeeContext';
@@ -113,20 +113,6 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
     return <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />;
   };
 
-  // Format countdown timer
-  const formatCountdown = (minutes: number | null) => {
-    if (minutes === null) return 'No recent hijacks';
-    if (minutes === 0) return 'Fee decrease imminent!';
-    
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    
-    if (hours > 0) {
-      return `${hours}h ${mins}m until fee decrease`;
-    }
-    return `${mins}m until fee decrease`;
-  };
-
   return (
     <>
       <div className={`transition-all duration-500 ${isConnected ? 'animate-slide-up' : 'opacity-60'}`}>
@@ -220,21 +206,11 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
                               <span className="text-muted-foreground">Next hijack will cost:</span>
                               <span className="text-orange-400 font-bold">{feeInfo.nextFeeAfterHijack} SOL</span>
                             </div>
-
-                            {feeInfo.nextDecreaseIn !== null && (
-                              <div className="flex items-center gap-2">
-                                <Clock className="w-4 h-4 text-blue-400" />
-                                <span className="text-blue-400 text-sm">
-                                  {formatCountdown(feeInfo.nextDecreaseIn)}
-                                </span>
-                                {feeInfo.nextDecreaseIn > 0 && <TrendingDown className="w-4 h-4 text-blue-400" />}
-                              </div>
-                            )}
                           </div>
                         ) : null}
                         
                         <div className="text-xs text-muted-foreground mt-2">
-                          • Fee increases by 0.1 SOL after each hijack • Decreases by 0.1 SOL every hour without hijacks • Minimum fee: 0.1 SOL
+                          • Fee increases by 0.1 SOL after each hijack • Minimum fee: 0.1 SOL
                         </div>
                       </div>
                     </div>
