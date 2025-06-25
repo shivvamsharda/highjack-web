@@ -17,7 +17,7 @@ const INTERNAL_API_KEY = Deno.env.get('INTERNAL_API_KEY') || 'fallback-internal-
 
 // Rate limiting configuration
 const RATE_LIMITS = {
-  'get-token-metadata': { requests: 100, window: 3600 }, // 100 per hour
+  'get-token-metadata': { requests: 4, window: 60 }, // 4 per minute (wallet-specific)
   'get-hijack-fee': { requests: 200, window: 3600 }, // 200 per hour
   'get-treasury-wallet': { requests: 50, window: 3600 }, // 50 per hour
   'update-token-metadata': { requests: 5, window: 3600 } // 5 per hour (strict for hijacking)
@@ -186,15 +186,53 @@ serve(async (req) => {
     
     console.log('Extracted endpoint:', endpoint)
     
-    // Get client identifier for rate limiting
-    const clientIP = req.headers.get('x-forwarded-for') || 'unknown'
-    const walletAddress = url.searchParams.get('wallet') || clientIP
+    // Get client identifier for rate limiting - wallet-specific for get-token-metadata
+    let clientId: string
+    if (endpoint === 'get-token-metadata') {
+      // For metadata endpoint, use wallet address if provided, otherwise fall back to IP
+      const walletAddress = url.searchParams.get('wallet')
+      if (!walletAddress) {
+        return new Response(
+          JSON.stringify({ 
+            error: 'Wallet address required for metadata endpoint',
+            details: 'Please provide wallet address as query parameter'
+          }),
+          { 
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        )
+      }
+      clientId = walletAddress
+      console.log('Using wallet address for rate limiting:', walletAddress)
+    } else {
+      // For other endpoints, use IP address
+      const clientIP = req.headers.get('x-forwarded-for') || 'unknown'
+      const walletAddress = url.searchParams.get('wallet') || clientIP
+      clientId = walletAddress
+    }
     
-    // Rate limiting check - be less strict for debugging
-    if (!checkRateLimit(walletAddress, endpoint)) {
-      console.log('Rate limit exceeded for:', walletAddress, endpoint)
-      // For now, just warn but don't block
-      console.log('Proceeding anyway for debugging...')
+    // Rate limiting check - now enforced for metadata endpoint
+    if (endpoint === 'get-token-metadata') {
+      if (!checkRateLimit(clientId, endpoint)) {
+        console.log('Rate limit exceeded for wallet:', clientId, endpoint)
+        return new Response(
+          JSON.stringify({ 
+            error: 'Rate limit exceeded',
+            details: 'Maximum 4 requests per minute per wallet address for metadata endpoint'
+          }),
+          { 
+            status: 429,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        )
+      }
+    } else {
+      // For other endpoints, just warn but don't block (for debugging)
+      if (!checkRateLimit(clientId, endpoint)) {
+        console.log('Rate limit exceeded for:', clientId, endpoint)
+        console.log('Proceeding anyway for debugging...')
+      }
     }
     
     // Route to internal function
