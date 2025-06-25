@@ -1,4 +1,3 @@
-
 import React from 'react';
 import WalletConnection from './WalletConnection';
 import { Button } from '@/components/ui/button';
@@ -54,7 +53,7 @@ const Header: React.FC<HeaderProps> = ({
         <div className="flex flex-col sm:flex-row items-center justify-center mb-8 gap-4 sm:gap-6">
           <div className="relative flex-shrink-0">
             <img 
-              src="/lovable-uploads/8ed11519-2895-4f27-b272-cb7839b9b3fa.png" 
+              src="/lovable-uploads/c3252643-b96a-44ed-aea5-9ff7be12c234.png" 
               alt="Highjack Logo" 
               className="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 animate-glow-pulse rounded-full"
             />
