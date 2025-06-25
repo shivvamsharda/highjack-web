@@ -71,7 +71,26 @@ export async function updateHijackRecordSuccess(
     throw new Error('Failed to update hijack record')
   }
 
-  console.log('Hijack record updated successfully - database trigger will handle Twitter posting')
+  console.log('Hijack record updated successfully')
+
+  // Call Twitter bot edge function directly
+  try {
+    console.log('Calling Twitter bot to post tweet for hijack:', recordId)
+    
+    const { data: twitterResponse, error: twitterError } = await supabase.functions.invoke('post-hijack-tweet', {
+      body: { hijack_id: recordId }
+    })
+
+    if (twitterError) {
+      console.error('Error calling Twitter bot:', twitterError)
+      // Don't throw error here - Twitter posting failure shouldn't fail the entire hijack
+    } else {
+      console.log('Twitter bot called successfully:', twitterResponse)
+    }
+  } catch (error) {
+    console.error('Failed to call Twitter bot:', error)
+    // Don't throw error here - Twitter posting failure shouldn't fail the entire hijack
+  }
 }
 
 export async function updateHijackRecordError(
