@@ -154,14 +154,18 @@
     background: rgba(239, 68, 68, 0.7);
   }
 
-  /* Enhanced Wallet Adapter Modal Styling */
+  /* ULTRA AGGRESSIVE Solana Wallet Adapter Modal Styling */
+  
+  /* Modal container and overlay */
   .wallet-adapter-modal,
   .wallet-adapter-modal-overlay {
     z-index: 9999 !important;
   }
 
-  .wallet-adapter-modal-container {
+  .wallet-adapter-modal-container,
+  .wallet-adapter-modal-container[style] {
     background-color: hsl(0 0% 8%) !important;
+    background: hsl(0 0% 8%) !important;
     border: 1px solid hsl(0 0% 15%) !important;
     border-radius: 0.75rem !important;
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.5) !important;
@@ -176,24 +180,56 @@
 
   .wallet-adapter-modal-list {
     background-color: transparent !important;
+    background: transparent !important;
   }
 
-  .wallet-adapter-modal-list-item {
+  /* TARGET ALL POSSIBLE WALLET LIST ITEM VARIATIONS */
+  .wallet-adapter-modal-list-item,
+  .wallet-adapter-modal-list-item[style],
+  li.wallet-adapter-modal-list-item,
+  .wallet-adapter-modal-list li,
+  .wallet-adapter-modal-list > li,
+  [class*="wallet-adapter-modal-list"] li,
+  .wallet-adapter-modal [role="listitem"],
+  .wallet-adapter-modal li {
     background-color: hsl(0 0% 10%) !important;
+    background: hsl(0 0% 10%) !important;
     border: 1px solid hsl(0 0% 15%) !important;
     border-radius: 0.5rem !important;
     margin-bottom: 0.5rem !important;
     transition: all 0.2s ease !important;
   }
 
-  .wallet-adapter-modal-list-item:hover {
+  /* HOVER STATES FOR LIST ITEMS */
+  .wallet-adapter-modal-list-item:hover,
+  .wallet-adapter-modal-list-item[style]:hover,
+  li.wallet-adapter-modal-list-item:hover,
+  .wallet-adapter-modal-list li:hover,
+  .wallet-adapter-modal-list > li:hover,
+  [class*="wallet-adapter-modal-list"] li:hover,
+  .wallet-adapter-modal [role="listitem"]:hover,
+  .wallet-adapter-modal li:hover {
     background-color: hsl(0 0% 12%) !important;
-    border-color: hsl(4 84% 57%) !important;
-    box-shadow: 0 0 10px rgba(239, 68, 68, 0.2) !important;
+    background: hsl(0 0% 12%) !important;
+    border-color: hsl(0 0% 20%) !important;
+    box-shadow: 0 0 5px rgba(255, 255, 255, 0.1) !important;
   }
 
-  .wallet-adapter-modal-list-item .wallet-adapter-button {
+  /* TARGET ALL WALLET ADAPTER BUTTONS INSIDE MODAL */
+  .wallet-adapter-modal .wallet-adapter-button,
+  .wallet-adapter-modal-list-item .wallet-adapter-button,
+  .wallet-adapter-modal-list-item button,
+  .wallet-adapter-modal-list button,
+  .wallet-adapter-modal button[type="button"],
+  .wallet-adapter-modal li button,
+  .wallet-adapter-modal [role="listitem"] button,
+  .wallet-adapter-modal-container .wallet-adapter-button,
+  .wallet-adapter-modal-wrapper .wallet-adapter-button,
+  div[class*="wallet-adapter-modal"] button,
+  button[class*="wallet-adapter"],
+  [class*="wallet-adapter"] button[type="button"] {
     background-color: transparent !important;
+    background: transparent !important;
     border: none !important;
     color: hsl(0 0% 95%) !important;
     font-family: 'Space Grotesk', sans-serif !important;
@@ -205,11 +241,25 @@
     gap: 0.75rem !important;
   }
 
-  .wallet-adapter-modal-list-item .wallet-adapter-button:hover {
+  /* BUTTON HOVER STATES */
+  .wallet-adapter-modal .wallet-adapter-button:hover,
+  .wallet-adapter-modal-list-item .wallet-adapter-button:hover,
+  .wallet-adapter-modal-list-item button:hover,
+  .wallet-adapter-modal-list button:hover,
+  .wallet-adapter-modal button[type="button"]:hover,
+  .wallet-adapter-modal li button:hover,
+  .wallet-adapter-modal [role="listitem"] button:hover,
+  .wallet-adapter-modal-container .wallet-adapter-button:hover,
+  .wallet-adapter-modal-wrapper .wallet-adapter-button:hover,
+  div[class*="wallet-adapter-modal"] button:hover,
+  button[class*="wallet-adapter"]:hover,
+  [class*="wallet-adapter"] button[type="button"]:hover {
     background-color: transparent !important;
+    background: transparent !important;
     color: hsl(0 0% 98%) !important;
   }
 
+  /* WALLET BUTTON ICONS AND TEXT */
   .wallet-adapter-modal-list-item .wallet-adapter-button-start-icon {
     width: 2rem !important;
     height: 2rem !important;
@@ -219,14 +269,16 @@
   .wallet-adapter-modal-list-item .wallet-adapter-button-label {
     font-weight: 500 !important;
     flex-grow: 1 !important;
+    color: hsl(0 0% 95%) !important;
   }
 
   .wallet-adapter-modal-list-item .wallet-adapter-button-end-text {
-    color: hsl(4 84% 57%) !important;
+    color: hsl(0 0% 65%) !important;
     font-size: 0.875rem !important;
     font-weight: 500 !important;
   }
 
+  /* CLOSE BUTTON */
   .wallet-adapter-modal-button-close {
     background-color: hsl(0 0% 12%) !important;
     border: 1px solid hsl(0 0% 15%) !important;
@@ -241,55 +293,48 @@
     color: hsl(0 0% 95%) !important;
   }
 
-  /* Override any inline styles that might conflict */
-  .wallet-adapter-modal-container[style] {
+  /* OVERRIDE ANY INLINE STYLES WITH AGGRESSIVE SELECTORS */
+  [style*="background-color: rgb(239"],
+  [style*="background-color: rgba(239"],
+  [style*="background: rgb(239"],
+  [style*="background: rgba(239"],
+  [style*="background-color: #ef"],
+  [style*="background: #ef"],
+  [style*="background-color: red"],
+  [style*="background: red"],
+  [style*="background-color: pink"],
+  [style*="background: pink"] {
+    background-color: hsl(0 0% 10%) !important;
+    background: hsl(0 0% 10%) !important;
+  }
+
+  /* NUCLEAR OPTION - Target any element inside wallet modal with red/pink background */
+  .wallet-adapter-modal * {
+    background-color: inherit !important;
+  }
+
+  .wallet-adapter-modal-container * {
+    background-color: inherit !important;
+  }
+
+  /* Re-establish the correct backgrounds after nuclear option */
+  .wallet-adapter-modal-container {
     background-color: hsl(0 0% 8%) !important;
   }
 
-  .wallet-adapter-modal-list-item[style] {
+  .wallet-adapter-modal-list-item,
+  .wallet-adapter-modal-list li {
     background-color: hsl(0 0% 10%) !important;
   }
 
-  /* SUPER AGGRESSIVE Solana Wallet Adapter overrides with maximum specificity */
-  .wallet-adapter-modal .wallet-adapter-button,
-  .wallet-adapter-dropdown .wallet-adapter-button,
-  button.wallet-adapter-button,
-  .wallet-adapter-button,
-  .wallet-adapter-modal .wallet-adapter-modal-button-close,
-  .wallet-adapter-modal-list .wallet-adapter-button,
-  .wallet-adapter-modal-container .wallet-adapter-button,
-  .wallet-adapter-modal-wrapper .wallet-adapter-button,
-  div[class*="wallet-adapter"] button,
-  button[class*="wallet-adapter"],
-  [class*="wallet-adapter"] button[type="button"] {
-    background-color: hsl(4 84% 57%) !important;
-    background: hsl(4 84% 57%) !important;
-    color: hsl(0 0% 98%) !important;
-    border: none !important;
-    border-color: transparent !important;
-  }
-
-  .wallet-adapter-modal .wallet-adapter-button:not([disabled]):hover,
-  .wallet-adapter-dropdown .wallet-adapter-button:not([disabled]):hover,
-  button.wallet-adapter-button:not([disabled]):hover,
-  .wallet-adapter-button:not([disabled]):hover,
-  .wallet-adapter-modal .wallet-adapter-modal-button-close:not([disabled]):hover,
-  .wallet-adapter-modal-list .wallet-adapter-button:not([disabled]):hover,
-  .wallet-adapter-modal-container .wallet-adapter-button:not([disabled]):hover,
-  .wallet-adapter-modal-wrapper .wallet-adapter-button:not([disabled]):hover,
-  div[class*="wallet-adapter"] button:not([disabled]):hover,
-  button[class*="wallet-adapter"]:not([disabled]):hover,
-  [class*="wallet-adapter"] button[type="button"]:not([disabled]):hover {
-    background-color: hsl(4 84% 52%) !important;
-    background: hsl(4 84% 52%) !important;
-    color: hsl(0 0% 98%) !important;
-    border-color: transparent !important;
-  }
-
+  /* MAIN CONNECT BUTTON STYLING (outside modal) */
   .wallet-adapter-modal .wallet-adapter-button-trigger,
   .wallet-adapter-dropdown .wallet-adapter-button-trigger,
   button.wallet-adapter-button-trigger,
   .wallet-adapter-button-trigger,
+  .wallet-adapter-dropdown .wallet-adapter-button,
+  button.wallet-adapter-button,
+  .wallet-adapter-button,
   .wallet-adapter-dropdown-list .wallet-adapter-button,
   .wallet-adapter-dropdown-list-item .wallet-adapter-button {
     background-color: hsl(4 84% 57%) !important;
@@ -303,6 +348,9 @@
   .wallet-adapter-dropdown .wallet-adapter-button-trigger:not([disabled]):hover,
   button.wallet-adapter-button-trigger:not([disabled]):hover,
   .wallet-adapter-button-trigger:not([disabled]):hover,
+  .wallet-adapter-dropdown .wallet-adapter-button:not([disabled]):hover,
+  button.wallet-adapter-button:not([disabled]):hover,
+  .wallet-adapter-button:not([disabled]):hover,
   .wallet-adapter-dropdown-list .wallet-adapter-button:not([disabled]):hover,
   .wallet-adapter-dropdown-list-item .wallet-adapter-button:not([disabled]):hover {
     background-color: hsl(4 84% 52%) !important;
@@ -311,7 +359,7 @@
     border-color: transparent !important;
   }
 
-  /* Target any potential purple/blue inline styles */
+  /* TARGET ANY POTENTIAL PURPLE/BLUE INLINE STYLES */
   [style*="background-color: rgb(85, 60, 154)"],
   [style*="background-color: rgb(66, 153, 225)"],
   [style*="background: rgb(85, 60, 154)"],
@@ -326,21 +374,23 @@
     background: hsl(4 84% 57%) !important;
   }
 
-  /* Override any CSS-in-JS or styled-components with maximum specificity */
-  div div div button[class*="wallet"],
-  div div div div button[class*="wallet"],
-  div div div div div button[class*="wallet"] {
+  /* FINAL FALLBACK - Override with maximum specificity */
+  html body div div div button[class*="wallet"],
+  html body div div div div button[class*="wallet"],
+  html body div div div div div button[class*="wallet"],
+  html body div div div div div div button[class*="wallet"] {
     background-color: hsl(4 84% 57%) !important;
     background: hsl(4 84% 57%) !important;
     color: hsl(0 0% 98%) !important;
     border-color: transparent !important;
   }
 
-  /* Target the most common purple variations */
-  button[style*="background"],
-  button[style*="background-color"] {
-    background-color: hsl(4 84% 57%) !important;
-    background: hsl(4 84% 57%) !important;
-    color: hsl(0 0% 98%) !important;
+  /* But not inside the modal list */
+  html body .wallet-adapter-modal-list button[class*="wallet"],
+  html body .wallet-adapter-modal-list-item button[class*="wallet"],
+  html body .wallet-adapter-modal li button[class*="wallet"] {
+    background-color: transparent !important;
+    background: transparent !important;
+    color: hsl(0 0% 95%) !important;
   }
 }
