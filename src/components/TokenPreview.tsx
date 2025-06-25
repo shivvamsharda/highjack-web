@@ -4,8 +4,9 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { ArrowRight, RefreshCw, ExternalLink, Shield, TrendingUp, Copy } from 'lucide-react';
+import { ArrowRight, RefreshCw, ExternalLink, Shield, TrendingUp, Copy, AlertTriangle } from 'lucide-react';
 import { useTokenMetadata } from '@/hooks/useTokenMetadata';
+import LoadingSkeleton from './LoadingSkeleton';
 
 interface TokenPreviewProps {
   tokenName: string;
@@ -67,10 +68,7 @@ const TokenPreview: React.FC<TokenPreviewProps> = ({
           </div>
           
           {isFetchingCurrent ? (
-            <div className="flex flex-col items-center space-y-3">
-              <div className="w-16 h-16 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-              <span className="text-sm text-muted-foreground">Loading current token...</span>
-            </div>
+            <LoadingSkeleton type="token" />
           ) : currentMetadata ? (
             <div className="space-y-3">
               <div className="flex flex-col items-center space-y-3">
@@ -142,10 +140,22 @@ const TokenPreview: React.FC<TokenPreviewProps> = ({
             </div>
           ) : (
             <div className="flex flex-col items-center space-y-3 text-muted-foreground">
-              <div className="w-16 h-16 bg-secondary/50 rounded-full flex items-center justify-center">
-                ❌
+              <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center border border-red-500/30">
+                <AlertTriangle className="w-8 h-8 text-red-400" />
               </div>
-              <span className="text-sm">Failed to load current token</span>
+              <div className="text-center space-y-1">
+                <span className="text-sm font-medium text-red-400">Connection Issue</span>
+                <span className="text-xs">Unable to load current token data</span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRefreshCurrent}
+                  className="mt-2 text-xs"
+                >
+                  <RefreshCw className="w-3 h-3 mr-1" />
+                  Retry
+                </Button>
+              </div>
             </div>
           )}
         </div>
