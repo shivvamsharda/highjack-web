@@ -3,10 +3,12 @@ import React, { useState } from 'react';
 import Header from '@/components/Header';
 import HijackForm from '@/components/HijackForm';
 import HijackHistory from '@/components/HijackHistory';
+import { useHijackFeeContext } from '@/contexts/HijackFeeContext';
 
 const Index = () => {
   const [isWalletConnected, setIsWalletConnected] = useState(false);
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
+  const { feeInfo, isLoading: isFeeLoading } = useHijackFeeContext();
 
   const handleWalletConnect = () => {
     // Simulate wallet connection
@@ -31,6 +33,8 @@ const Index = () => {
             walletAddress={walletAddress}
             onConnect={handleWalletConnect}
             onDisconnect={handleWalletDisconnect}
+            currentFee={feeInfo?.currentFee || null}
+            isFeeLoading={isFeeLoading}
           />
 
           {/* Top Section - Preview and Form side by side */}

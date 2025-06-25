@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Button } from '@/components/ui/button';
@@ -104,7 +103,6 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
   const isFormValid = tokenName && ticker && imageFile && isConnected && feeInfo;
   const LockIcon = isFormValid ? Unlock : Lock;
 
-  // Enhanced progress indicator with finality stages
   const getProgressIcon = () => {
     if (progress.includes('Waiting for transaction confirmation') || 
         progress.includes('Payment confirmed and finalized')) {
@@ -204,7 +202,7 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
                             
                             <div className="flex items-center gap-2">
                               <span className="text-muted-foreground">Next hijack will cost:</span>
-                              <span className="text-orange-400 font-bold">{feeInfo.nextFeeAfterHijack} SOL</span>
+                              <span className="text-orange-400 font-bold">{feeInfo.nextFeeAfterHijack.toFixed(2)} SOL</span>
                             </div>
                           </div>
                         ) : null}

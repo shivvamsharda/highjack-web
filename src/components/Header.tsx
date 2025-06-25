@@ -8,13 +8,17 @@ interface HeaderProps {
   walletAddress: string | null;
   onConnect: () => void;
   onDisconnect: () => void;
+  currentFee?: number | null;
+  isFeeLoading?: boolean;
 }
 
 const Header: React.FC<HeaderProps> = ({
   isWalletConnected,
   walletAddress,
   onConnect,
-  onDisconnect
+  onDisconnect,
+  currentFee = null,
+  isFeeLoading = false
 }) => {
   const scrollToRecentHijacks = () => {
     const recentHijacksElement = document.getElementById('recent-hijacks');
@@ -24,6 +28,12 @@ const Header: React.FC<HeaderProps> = ({
         block: 'start'
       });
     }
+  };
+
+  const formatFee = () => {
+    if (isFeeLoading) return '...';
+    if (currentFee === null) return '0.10';
+    return currentFee.toFixed(2);
   };
 
   return (
@@ -57,7 +67,7 @@ const Header: React.FC<HeaderProps> = ({
         
         <p className="text-lg md:text-xl lg:text-2xl text-foreground max-w-3xl mx-auto mb-8 font-medium leading-relaxed">
           Hijack a token's soul for{' '}
-          <span className="text-primary font-bold">0.1 SOL</span>.{' '}
+          <span className="text-primary font-bold">{formatFee()} SOL</span>.{' '}
           Rebrand it. Rename it. Make it yours.
         </p>
         
