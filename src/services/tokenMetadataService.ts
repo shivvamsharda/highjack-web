@@ -1,15 +1,16 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { UpdateTokenMetadataParams, UpdateTokenMetadataResponse, FetchCurrentMetadataResponse } from '@/types/tokenMetadata';
+import { generateHMACSignature } from '@/utils/hmacUtils';
 
 export const tokenMetadataService = {
   async fetchCurrentMetadata(): Promise<FetchCurrentMetadataResponse> {
-    console.log('Fetching current token metadata...');
+    console.log('Fetching current token metadata through API Gateway...');
     
-    const { data, error } = await supabase.functions.invoke('get-token-metadata');
+    const { data, error } = await supabase.functions.invoke('api-gateway/get-token-metadata');
 
     if (error) {
-      console.error('Edge function error:', error);
+      console.error('API Gateway error:', error);
       throw new Error(error.message || 'Failed to fetch current token metadata');
     }
 
@@ -22,10 +23,10 @@ export const tokenMetadataService = {
   },
 
   async fetchTreasuryWallet(): Promise<{ success: boolean; walletAddress?: string; error?: string }> {
-    const { data, error } = await supabase.functions.invoke('get-treasury-wallet');
+    const { data, error } = await supabase.functions.invoke('api-gateway/get-treasury-wallet');
 
     if (error) {
-      console.error('Failed to fetch treasury wallet:', error);
+      console.error('Failed to fetch treasury wallet through API Gateway:', error);
       throw new Error(`Failed to fetch treasury wallet: ${error.message}`);
     }
 
@@ -44,12 +45,26 @@ export const tokenMetadataService = {
     formData.append('userWalletAddress', params.userWalletAddress);
     formData.append('paymentSignature', params.paymentSignature);
 
-    const { data, error } = await supabase.functions.invoke('update-token-metadata', {
+    // Generate HMAC signature for this sensitive operation
+    const bodyString = JSON.stringify({
+      tokenName: params.tokenName,
+      ticker: params.ticker,
+      userWalletAddress: params.userWalletAddress,
+      paymentSignature: params.paymentSignature
+    });
+    
+    const { signature, timestamp } = await generateHMACSignature(bodyString);
+
+    const { data, error } = await supabase.functions.invoke('api-gateway/update-token-metadata', {
       body: formData,
+      headers: {
+        'x-signature': signature,
+        'x-timestamp': timestamp
+      }
     });
 
     if (error) {
-      console.error('Edge function error:', error);
+      console.error('API Gateway error:', error);
       throw new Error(error.message || 'Failed to update token metadata');
     }
 
