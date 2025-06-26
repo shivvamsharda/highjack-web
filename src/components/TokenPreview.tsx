@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -248,7 +247,6 @@ const TokenPreview: React.FC<TokenPreviewProps> = ({
                           className="h-8 px-3 text-xs hover:bg-primary/10"
                           onClick={() => window.open(xLink, '_blank')}
                         >
-                          <X className="w-3 h-3 mr-1" />
                           X (Twitter)
                         </Button>
                       )}
