@@ -1,9 +1,11 @@
-
 export interface UpdateTokenMetadataParams {
   tokenName: string;
   ticker: string;
   imageFile: File;
   userWalletAddress: string;
+  xLink?: string;
+  telegramLink?: string;
+  websiteLink?: string;
 }
 
 export interface UpdateTokenMetadataResponse {

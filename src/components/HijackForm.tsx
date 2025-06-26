@@ -22,6 +22,9 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
   const [ticker, setTicker] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [xLink, setXLink] = useState('');
+  const [telegramLink, setTelegramLink] = useState('');
+  const [websiteLink, setWebsiteLink] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
   const [transactionSignature, setTransactionSignature] = useState<string>('');
   const [updateTransactionSignature, setUpdateTransactionSignature] = useState<string>('');
@@ -41,13 +44,51 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
     reader.readAsDataURL(file);
   };
 
+  const validateUrl = (url: string): boolean => {
+    if (!url.trim()) return true; // Empty URLs are valid (optional)
+    try {
+      new URL(url);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!tokenName || !ticker || !imageFile) {
       toast({
         title: "Missing Information",
-        description: "Fill all fields to complete the hijack.",
+        description: "Fill all required fields to complete the hijack.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate social links if provided
+    if (xLink && !validateUrl(xLink)) {
+      toast({
+        title: "Invalid X Link",
+        description: "Please enter a valid URL for X link.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (telegramLink && !validateUrl(telegramLink)) {
+      toast({
+        title: "Invalid Telegram Link",
+        description: "Please enter a valid URL for Telegram link.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (websiteLink && !validateUrl(websiteLink)) {
+      toast({
+        title: "Invalid Website Link",
+        description: "Please enter a valid URL for website link.",
         variant: "destructive",
       });
       return;
@@ -76,7 +117,10 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
       ticker,
       imageFile,
       userWalletAddress: publicKey.toBase58(),
-      currentFee: feeInfo.currentFee
+      currentFee: feeInfo.currentFee,
+      xLink: xLink.trim() || undefined,
+      telegramLink: telegramLink.trim() || undefined,
+      websiteLink: websiteLink.trim() || undefined
     });
 
     if (result.success && result.transactionSignature) {
@@ -95,6 +139,9 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
     setTicker('');
     setImageFile(null);
     setImagePreview(null);
+    setXLink('');
+    setTelegramLink('');
+    setWebsiteLink('');
     setTransactionSignature('');
     setUpdateTransactionSignature('');
     setExplorerUrl('');
@@ -123,6 +170,9 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
               tokenName={tokenName}
               ticker={ticker}
               imagePreview={imagePreview}
+              xLink={xLink}
+              telegramLink={telegramLink}
+              websiteLink={websiteLink}
               isSubmitting={isUpdating}
             />
           </div>
@@ -173,6 +223,41 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
                       imagePreview={imagePreview}
                       disabled={!isConnected || isUpdating}
                     />
+                  </div>
+
+                  {/* Social Links Section */}
+                  <div className="space-y-4">
+                    <label className="block text-foreground font-medium text-lg">
+                      Social Links <span className="text-muted-foreground text-sm font-normal">(Optional)</span>
+                    </label>
+                    <div className="grid grid-cols-1 gap-4">
+                      <FloatingLabelInput
+                        id="xLink"
+                        label="X (Twitter) Link"
+                        value={xLink}
+                        onChange={setXLink}
+                        placeholder="https://x.com/username"
+                        disabled={!isConnected || isUpdating}
+                      />
+
+                      <FloatingLabelInput
+                        id="telegramLink"
+                        label="Telegram Link"
+                        value={telegramLink}
+                        onChange={setTelegramLink}
+                        placeholder="https://t.me/username"
+                        disabled={!isConnected || isUpdating}
+                      />
+
+                      <FloatingLabelInput
+                        id="websiteLink"
+                        label="Website Link"
+                        value={websiteLink}
+                        onChange={setWebsiteLink}
+                        placeholder="https://yourwebsite.com"
+                        disabled={!isConnected || isUpdating}
+                      />
+                    </div>
                   </div>
 
                   {/* Dynamic Fee Display */}

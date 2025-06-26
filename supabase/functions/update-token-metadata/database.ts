@@ -34,12 +34,16 @@ export async function createHijackRecord(
       image_file_type: formData.imageFile.type,
       status: 'processing',
       transaction_signature: formData.paymentSignature,
-      fee_paid_sol: formData.feePaidSol
+      fee_paid_sol: formData.feePaidSol,
+      x_link: formData.xLink || null,
+      telegram_link: formData.telegramLink || null,
+      website_link: formData.websiteLink || null
     })
     .select()
     .single()
 
   if (insertError) {
+    console.error('Database insert error:', insertError)
     throw new Error('Failed to create hijack record')
   }
 

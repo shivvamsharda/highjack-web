@@ -1,10 +1,11 @@
+
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { ArrowRight, RefreshCw, ExternalLink, Shield, TrendingUp, Copy, AlertTriangle, X } from 'lucide-react';
+import { ArrowRight, RefreshCw, ExternalLink, Shield, Globe, Send, X, AlertTriangle, Copy } from 'lucide-react';
 import { useTokenMetadata } from '@/hooks/useTokenMetadata';
 import LoadingSkeleton from './LoadingSkeleton';
 
@@ -12,6 +13,9 @@ interface TokenPreviewProps {
   tokenName: string;
   ticker: string;
   imagePreview: string | null;
+  xLink?: string;
+  telegramLink?: string;
+  websiteLink?: string;
   isSubmitting?: boolean;
 }
 
@@ -19,6 +23,9 @@ const TokenPreview: React.FC<TokenPreviewProps> = ({
   tokenName,
   ticker,
   imagePreview,
+  xLink,
+  telegramLink,
+  websiteLink,
   isSubmitting = false
 }) => {
   const { fetchCurrentTokenMetadata, isFetchingCurrent, currentMetadata } = useTokenMetadata();
@@ -49,6 +56,8 @@ const TokenPreview: React.FC<TokenPreviewProps> = ({
   const closeFullscreen = () => {
     setFullscreenImage(null);
   };
+
+  const hasSocialLinks = xLink || telegramLink || websiteLink;
 
   return (
     <>
@@ -129,24 +138,6 @@ const TokenPreview: React.FC<TokenPreviewProps> = ({
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Update Authority:</span>
                       <span className="font-mono">{truncateAddress(currentMetadata.updateAuthority)}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Token Stats */}
-                <div className="space-y-2 bg-secondary/20 p-3 rounded-lg">
-                  <h4 className="font-semibold text-sm flex items-center gap-2">
-                    <TrendingUp className="w-4 h-4" />
-                    Token Stats
-                  </h4>
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div className="space-y-1">
-                      <div className="text-muted-foreground">Holders</div>
-                      <div className="font-semibold">1,247</div>
-                    </div>
-                    <div className="space-y-1">
-                      <div className="text-muted-foreground">Market Cap</div>
-                      <div className="font-semibold">$42.6K</div>
                     </div>
                   </div>
                 </div>
@@ -241,6 +232,54 @@ const TokenPreview: React.FC<TokenPreviewProps> = ({
                       </span>
                     </div>
                   </div>
+                </div>
+
+                {/* Social Links Preview */}
+                <div className="space-y-2 bg-secondary/20 p-3 rounded-lg">
+                  <h4 className="font-semibold text-sm flex items-center gap-2">
+                    🔗 Social Links
+                  </h4>
+                  {hasSocialLinks ? (
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {xLink && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 px-3 text-xs hover:bg-primary/10"
+                          onClick={() => window.open(xLink, '_blank')}
+                        >
+                          <X className="w-3 h-3 mr-1" />
+                          X
+                        </Button>
+                      )}
+                      {telegramLink && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 px-3 text-xs hover:bg-primary/10"
+                          onClick={() => window.open(telegramLink, '_blank')}
+                        >
+                          <Send className="w-3 h-3 mr-1" />
+                          Telegram
+                        </Button>
+                      )}
+                      {websiteLink && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 px-3 text-xs hover:bg-primary/10"
+                          onClick={() => window.open(websiteLink, '_blank')}
+                        >
+                          <Globe className="w-3 h-3 mr-1" />
+                          Website
+                        </Button>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-xs text-muted-foreground">
+                      Add social links to display here
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

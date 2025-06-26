@@ -51,11 +51,14 @@ export type Database = {
           metadata_uri: string | null
           new_metadata: Json | null
           status: string
+          telegram_link: string | null
           ticker_symbol: string
           token_name: string
           transaction_signature: string | null
           updated_at: string
           wallet_address: string
+          website_link: string | null
+          x_link: string | null
         }
         Insert: {
           block_time?: number | null
@@ -71,11 +74,14 @@ export type Database = {
           metadata_uri?: string | null
           new_metadata?: Json | null
           status?: string
+          telegram_link?: string | null
           ticker_symbol: string
           token_name: string
           transaction_signature?: string | null
           updated_at?: string
           wallet_address: string
+          website_link?: string | null
+          x_link?: string | null
         }
         Update: {
           block_time?: number | null
@@ -91,11 +97,14 @@ export type Database = {
           metadata_uri?: string | null
           new_metadata?: Json | null
           status?: string
+          telegram_link?: string | null
           ticker_symbol?: string
           token_name?: string
           transaction_signature?: string | null
           updated_at?: string
           wallet_address?: string
+          website_link?: string | null
+          x_link?: string | null
         }
         Relationships: []
       }

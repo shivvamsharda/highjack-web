@@ -1,9 +1,8 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Twitter, MessageCircle, RefreshCw, ExternalLink } from 'lucide-react';
+import { Twitter, MessageCircle, RefreshCw, ExternalLink, Globe, Send, X } from 'lucide-react';
 import { useHijackHistory } from '@/hooks/useHijackHistory';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -131,7 +130,40 @@ const HijackHistory: React.FC = () => {
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
+                  {/* Social Links */}
+                  {hijack.x_link && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-8 h-8 p-0 hover:bg-primary/10 hover:glow-red transition-all duration-300"
+                      onClick={() => window.open(hijack.x_link!, '_blank')}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  )}
+                  {hijack.telegram_link && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-8 h-8 p-0 hover:bg-primary/10 hover:glow-red transition-all duration-300"
+                      onClick={() => window.open(hijack.telegram_link!, '_blank')}
+                    >
+                      <Send className="w-4 h-4" />
+                    </Button>
+                  )}
+                  {hijack.website_link && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-8 h-8 p-0 hover:bg-primary/10 hover:glow-red transition-all duration-300"
+                      onClick={() => window.open(hijack.website_link!, '_blank')}
+                    >
+                      <Globe className="w-4 h-4" />
+                    </Button>
+                  )}
+                  
+                  {/* Existing buttons */}
                   {hijack.transaction_signature && (
                     <Button
                       variant="ghost"

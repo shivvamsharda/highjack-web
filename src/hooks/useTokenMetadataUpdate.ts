@@ -85,7 +85,7 @@ export const useTokenMetadataUpdate = () => {
 
       setProgress('Uploading files and updating metadata on-chain...');
 
-      // Call the edge function with payment proof
+      // Call the edge function with payment proof and social links
       const data = await tokenMetadataService.updateMetadata({
         ...params,
         paymentSignature: signature
