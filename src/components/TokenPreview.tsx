@@ -249,7 +249,7 @@ const TokenPreview: React.FC<TokenPreviewProps> = ({
                           onClick={() => window.open(xLink, '_blank')}
                         >
                           <X className="w-3 h-3 mr-1" />
-                          X
+                          X (Twitter)
                         </Button>
                       )}
                       {telegramLink && (
