@@ -1,3 +1,4 @@
+
 import React from 'react';
 import WalletConnection from './WalletConnection';
 import { Button } from '@/components/ui/button';
@@ -72,7 +73,7 @@ const Header: React.FC<HeaderProps> = ({
         
         <div className="flex items-center justify-center gap-3 md:gap-6 flex-wrap">
           <div className="bg-secondary/50 px-3 md:px-4 py-1 md:py-2 rounded-full border border-primary/20">
-            <span className="text-primary font-bold flex items-center gap-2 text-sm md:text-base animate-flicker">
+            <span className="text-primary font-bold flex items-center gap-2 text-xs md:text-sm animate-flicker">
               🔥 Degen Mode: ON
             </span>
           </div>
