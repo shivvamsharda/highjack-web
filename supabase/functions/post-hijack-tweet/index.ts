@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
 import { createHmac } from "https://deno.land/std@0.168.0/node/crypto.ts"
@@ -169,27 +170,27 @@ serve(async (req) => {
 
     const previousHijack = previousHijacks && previousHijacks.length > 0 ? previousHijacks[0] : null
 
-    // Build tweet content based on whether we have previous hijack info
+    // Build tweet content using the new format
     let tweetContent = ''
     
     if (previousHijack) {
       // Show transformation from previous identity to new identity
       tweetContent = `🏴‍☠️ Token Hijacked! 
 
-${previousHijack.token_name} ($${previousHijack.ticker_symbol}) has been hijacked and transformed into ${hijack.token_name} ($${hijack.ticker_symbol})!
+${previousHijack.token_name} ($${previousHijack.ticker_symbol}) just got a new identity! 
 
-👑 Hijacker: ${hijack.wallet_address.slice(0, 6)}...${hijack.wallet_address.slice(-4)}
-
-#TokenHijack #Solana #DeFi #HIGHJACK`
+🔥 Name: ${hijack.token_name}
+💎 Symbol: $${hijack.ticker_symbol}
+👑 Hijacker: ${hijack.wallet_address.slice(0, 6)}...${hijack.wallet_address.slice(-4)}`
     } else {
       // Fall back to generic message if no previous hijack found
       tweetContent = `🏴‍☠️ Token Hijacked! 
 
-Meet the new identity: ${hijack.token_name} ($${hijack.ticker_symbol})!
+${hijack.token_name} ($${hijack.ticker_symbol}) just got a new identity! 
 
-👑 Hijacker: ${hijack.wallet_address.slice(0, 6)}...${hijack.wallet_address.slice(-4)}
-
-#TokenHijack #Solana #DeFi #HIGHJACK`
+🔥 Name: ${hijack.token_name}
+💎 Symbol: $${hijack.ticker_symbol}
+👑 Hijacker: ${hijack.wallet_address.slice(0, 6)}...${hijack.wallet_address.slice(-4)}`
     }
 
     // Add social links if they exist
@@ -202,17 +203,21 @@ Meet the new identity: ${hijack.token_name} ($${hijack.ticker_symbol})!
       const linksText = `\n\n🔗 Links:\n${socialLinks.join('\n')}`
       
       // Check if adding links would exceed Twitter's character limit (280)
-      if ((tweetContent + linksText).length <= 280) {
-        tweetContent += linksText
+      const baseContentWithHashtag = tweetContent + '\n\n#TOKENHIGHJACK'
+      if ((baseContentWithHashtag + linksText).length <= 280) {
+        tweetContent = baseContentWithHashtag + linksText
       } else {
-        // If too long, add a shorter version
-        tweetContent += `\n\n🔗 Links: ${socialLinks.join(' | ')}`
+        // If too long, try shorter format or truncate
+        tweetContent = baseContentWithHashtag
         
         // If still too long, truncate
         if (tweetContent.length > 280) {
-          tweetContent = tweetContent.substring(0, 277) + '...'
+          tweetContent = tweetContent.substring(0, 267) + '...\n\n#TOKENHIGHJACK'
         }
       }
+    } else {
+      // Add hashtag even without social links
+      tweetContent += '\n\n#TOKENHIGHJACK'
     }
 
     console.log('Tweet content prepared:', tweetContent)
