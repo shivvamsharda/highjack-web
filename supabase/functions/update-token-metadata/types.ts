@@ -8,6 +8,7 @@ export interface HijackFormData {
   xLink?: string
   telegramLink?: string
   websiteLink?: string
+  description?: string
 }
 
 export interface HijackRecord {
@@ -32,6 +33,7 @@ export interface HijackRecord {
   x_link: string | null
   telegram_link: string | null
   website_link: string | null
+  description: string | null
 }
 
 export interface TokenMetadata {

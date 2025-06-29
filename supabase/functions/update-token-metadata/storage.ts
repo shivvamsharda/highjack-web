@@ -7,7 +7,8 @@ export async function uploadImageAndMetadata(
   imageFile: File,
   tokenName: string,
   ticker: string,
-  userWalletAddress: string
+  userWalletAddress: string,
+  description?: string
 ): Promise<MetadataUploadResult> {
   console.log('Uploading image to Supabase Storage...')
 
@@ -38,11 +39,14 @@ export async function uploadImageAndMetadata(
   const imageUri = imageUrlData.publicUrl
   console.log('Image uploaded to Supabase Storage:', imageUri)
 
+  // Use custom description or fallback to default format
+  const tokenDescription = description || `${tokenName} (${ticker}) - Token hijacked on Solana`
+
   // Create metadata object
   const metadata = {
     name: tokenName,
     symbol: ticker.toUpperCase(),
-    description: `${tokenName} (${ticker}) - Token hijacked on Solana`,
+    description: tokenDescription,
     image: imageUri,
     attributes: [
       {

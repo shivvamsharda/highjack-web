@@ -1,3 +1,4 @@
+
 export interface UpdateTokenMetadataParams {
   tokenName: string;
   ticker: string;
@@ -6,6 +7,7 @@ export interface UpdateTokenMetadataParams {
   xLink?: string;
   telegramLink?: string;
   websiteLink?: string;
+  description?: string;
 }
 
 export interface UpdateTokenMetadataResponse {

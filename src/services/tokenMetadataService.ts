@@ -77,13 +77,20 @@ export const tokenMetadataService = {
     formData.append('userWalletAddress', params.userWalletAddress);
     formData.append('paymentSignature', params.paymentSignature);
 
+    // Add optional fields
+    if (params.xLink) formData.append('xLink', params.xLink);
+    if (params.telegramLink) formData.append('telegramLink', params.telegramLink);
+    if (params.websiteLink) formData.append('websiteLink', params.websiteLink);
+    if (params.description) formData.append('description', params.description);
+
     try {
       // Generate HMAC signature for this sensitive operation
       const bodyString = JSON.stringify({
         tokenName: params.tokenName,
         ticker: params.ticker,
         userWalletAddress: params.userWalletAddress,
-        paymentSignature: params.paymentSignature
+        paymentSignature: params.paymentSignature,
+        description: params.description
       });
       
       const { signature, timestamp } = await generateHMACSignature(bodyString);

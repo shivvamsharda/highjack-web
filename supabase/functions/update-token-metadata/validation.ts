@@ -8,6 +8,10 @@ export function validateFormData(formData: FormData): HijackFormData | null {
   const imageFile = formData.get('imageFile') as File
   const userWalletAddress = formData.get('userWalletAddress') as string
   const paymentSignature = formData.get('paymentSignature') as string
+  const xLink = formData.get('xLink') as string
+  const telegramLink = formData.get('telegramLink') as string
+  const websiteLink = formData.get('websiteLink') as string
+  const description = formData.get('description') as string
 
   if (!tokenName || !ticker || !imageFile || !userWalletAddress || !paymentSignature) {
     return null
@@ -18,7 +22,11 @@ export function validateFormData(formData: FormData): HijackFormData | null {
     ticker,
     imageFile,
     userWalletAddress,
-    paymentSignature
+    paymentSignature,
+    xLink: xLink || undefined,
+    telegramLink: telegramLink || undefined,
+    websiteLink: websiteLink || undefined,
+    description: description || undefined
   }
 }
 

@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Textarea } from '@/components/ui/textarea';
 import { Zap, AlertCircle, Lock, Unlock, CheckCircle, TrendingUp } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useTokenMetadata } from '@/hooks/useTokenMetadata';
@@ -20,6 +21,7 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
   const { publicKey } = useWallet();
   const [tokenName, setTokenName] = useState('');
   const [ticker, setTicker] = useState('');
+  const [description, setDescription] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [xLink, setXLink] = useState('');
@@ -120,7 +122,8 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
       currentFee: feeInfo.currentFee,
       xLink: xLink.trim() || undefined,
       telegramLink: telegramLink.trim() || undefined,
-      websiteLink: websiteLink.trim() || undefined
+      websiteLink: websiteLink.trim() || undefined,
+      description: description.trim() || undefined
     });
 
     if (result.success && result.transactionSignature) {
@@ -137,6 +140,7 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
     // Reset form
     setTokenName('');
     setTicker('');
+    setDescription('');
     setImageFile(null);
     setImagePreview(null);
     setXLink('');
@@ -169,6 +173,7 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
             <TokenPreview
               tokenName={tokenName}
               ticker={ticker}
+              description={description}
               imagePreview={imagePreview}
               xLink={xLink}
               telegramLink={telegramLink}
@@ -212,6 +217,25 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
                       disabled={!isConnected || isUpdating}
                       transform={(value) => value.toUpperCase()}
                     />
+                  </div>
+
+                  {/* Description Field */}
+                  <div>
+                    <label className="block text-foreground font-medium text-lg mb-3">
+                      Description <span className="text-muted-foreground text-sm font-normal">(Optional)</span>
+                    </label>
+                    <Textarea
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      placeholder="Describe your token's purpose, mission, or story..."
+                      disabled={!isConnected || isUpdating}
+                      maxLength={280}
+                      rows={3}
+                      className="bg-background/50 border-border focus:border-primary/50 transition-colors resize-none"
+                    />
+                    <div className="text-xs text-muted-foreground mt-2">
+                      {description.length}/280 characters
+                    </div>
                   </div>
 
                   <div>

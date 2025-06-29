@@ -40,6 +40,7 @@ export type Database = {
         Row: {
           block_time: number | null
           created_at: string
+          description: string | null
           error_message: string | null
           explorer_url: string | null
           fee_paid_sol: number | null
@@ -63,6 +64,7 @@ export type Database = {
         Insert: {
           block_time?: number | null
           created_at?: string
+          description?: string | null
           error_message?: string | null
           explorer_url?: string | null
           fee_paid_sol?: number | null
@@ -86,6 +88,7 @@ export type Database = {
         Update: {
           block_time?: number | null
           created_at?: string
+          description?: string | null
           error_message?: string | null
           explorer_url?: string | null
           fee_paid_sol?: number | null

@@ -185,13 +185,14 @@ serve(async (req) => {
       throw new Error('Invalid WALLET_KEY format. Must be base58 string or JSON array.')
     }
 
-    // Upload image and metadata to storage
+    // Upload image and metadata to storage (with description)
     const uploadResult = await uploadImageAndMetadata(
       supabase,
       validatedData.imageFile,
       validatedData.tokenName,
       validatedData.ticker,
-      validatedData.userWalletAddress
+      validatedData.userWalletAddress,
+      validatedData.description
     )
 
     // Update token metadata on-chain

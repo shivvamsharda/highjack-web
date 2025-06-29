@@ -37,7 +37,8 @@ export async function createHijackRecord(
       fee_paid_sol: formData.feePaidSol,
       x_link: formData.xLink || null,
       telegram_link: formData.telegramLink || null,
-      website_link: formData.websiteLink || null
+      website_link: formData.websiteLink || null,
+      description: formData.description || null
     })
     .select()
     .single()
