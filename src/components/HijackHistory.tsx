@@ -1,8 +1,9 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Twitter, MessageCircle, RefreshCw, ExternalLink, Globe, Send, X } from 'lucide-react';
+import { RefreshCw, ExternalLink, Globe, Send, X } from 'lucide-react';
 import { useHijackHistory } from '@/hooks/useHijackHistory';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -131,7 +132,7 @@ const HijackHistory: React.FC = () => {
                 </div>
                 
                 <div className="flex items-center gap-1">
-                  {/* Social Links */}
+                  {/* Social Links - only show if user provided them */}
                   {hijack.x_link && (
                     <Button
                       variant="ghost"
@@ -163,7 +164,7 @@ const HijackHistory: React.FC = () => {
                     </Button>
                   )}
                   
-                  {/* Existing buttons */}
+                  {/* Explorer link - only show if transaction signature exists */}
                   {hijack.transaction_signature && (
                     <Button
                       variant="ghost"
@@ -174,21 +175,6 @@ const HijackHistory: React.FC = () => {
                       <ExternalLink className="w-4 h-4" />
                     </Button>
                   )}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="w-8 h-8 p-0 hover:bg-primary/10 hover:glow-red transition-all duration-300"
-                    onClick={() => window.open(`https://twitter.com/intent/tweet?text=Just%20hijacked%20${hijack.token_name}%20%28%24${hijack.ticker_symbol}%29%20on%20%40HIGHJACK_SOL%21%20%F0%9F%8F%B4%E2%80%8D%E2%98%A0%EF%B8%8F`, '_blank')}
-                  >
-                    <Twitter className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="w-8 h-8 p-0 hover:bg-primary/10 hover:glow-red transition-all duration-300"
-                  >
-                    <MessageCircle className="w-4 h-4" />
-                  </Button>
                 </div>
                 
                 <div className="text-right ml-3">
