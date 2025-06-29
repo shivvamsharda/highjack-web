@@ -229,12 +229,12 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
                       onChange={(e) => setDescription(e.target.value)}
                       placeholder="Describe your token's purpose, mission, or story..."
                       disabled={!isConnected || isUpdating}
-                      maxLength={280}
+                      maxLength={250}
                       rows={3}
                       className="bg-background/50 border-border focus:border-primary/50 transition-colors resize-none"
                     />
                     <div className="text-xs text-muted-foreground mt-2">
-                      {description.length}/280 characters
+                      {description.length}/250 characters
                     </div>
                   </div>
 

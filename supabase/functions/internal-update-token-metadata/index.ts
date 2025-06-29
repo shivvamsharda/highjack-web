@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
 import { Connection, PublicKey, Keypair } from 'https://esm.sh/@solana/web3.js@1.98.2'
@@ -324,10 +323,13 @@ async function uploadImageAndMetadata(
   const imageUri = imageUrlData.publicUrl
   console.log('Image uploaded to Supabase Storage:', imageUri)
 
+  // Use new description template
+  const tokenDescription = "Steal the billboard. Make it yours. Leave your mark on-chain. Message from the hijacker:"
+
   const metadata = {
     name: tokenName,
     symbol: ticker.toUpperCase(),
-    description: `${tokenName} (${ticker}) - Token hijacked on Solana`,
+    description: tokenDescription,
     image: imageUri,
     attributes: [
       {

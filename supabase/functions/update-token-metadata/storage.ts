@@ -39,8 +39,11 @@ export async function uploadImageAndMetadata(
   const imageUri = imageUrlData.publicUrl
   console.log('Image uploaded to Supabase Storage:', imageUri)
 
-  // Use custom description or fallback to default format
-  const tokenDescription = description || `${tokenName} (${ticker}) - Token hijacked on Solana`
+  // Create token description with new template
+  const baseTemplate = "Steal the billboard. Make it yours. Leave your mark on-chain. Message from the hijacker:"
+  const tokenDescription = description 
+    ? `${baseTemplate}\n${description}` 
+    : baseTemplate
 
   // Create metadata object
   const metadata = {
