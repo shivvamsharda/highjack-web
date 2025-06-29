@@ -71,7 +71,7 @@ const Header: React.FC<HeaderProps> = ({
           Rebrand it. Rename it. Make it yours.
         </p>
         
-        <div className="flex items-center justify-center gap-3 md:gap-6 flex-wrap">
+        <div className="flex items-center justify-center gap-3 md:gap-6 flex-wrap mb-6">
           <div className="bg-secondary/50 px-3 md:px-4 py-1 md:py-2 rounded-full border border-primary/20">
             <span className="text-primary font-bold flex items-center gap-2 text-xs md:text-sm animate-flicker">
               🔥 Degen Mode: ON
@@ -87,6 +87,29 @@ const Header: React.FC<HeaderProps> = ({
               🏴‍☠️ Recent Hijacks
             </span>
           </div>
+        </div>
+
+        {/* Social Media Links */}
+        <div className="flex justify-center items-center gap-6">
+          <a 
+            href="https://t.me/highjackme" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors duration-300"
+          >
+            <span className="text-lg">📱</span>
+            <span className="font-medium">Telegram</span>
+          </a>
+          <span className="text-muted-foreground">•</span>
+          <a 
+            href="https://x.com/highjack_me" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors duration-300"
+          >
+            <span className="text-lg">🐦</span>
+            <span className="font-medium">Twitter</span>
+          </a>
         </div>
       </div>
     </header>

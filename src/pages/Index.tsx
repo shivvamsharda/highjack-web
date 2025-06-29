@@ -40,29 +40,6 @@ const Index = () => {
           {/* Top Section - Preview and Form side by side */}
           <div className="max-w-7xl mx-auto mt-8 mb-12">
             <HijackForm isConnected={isWalletConnected} />
-            
-            {/* Social Media Links */}
-            <div className="flex justify-center items-center gap-6 mt-8">
-              <a 
-                href="https://t.me/highjackme" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors duration-300"
-              >
-                <span className="text-lg">📱</span>
-                <span className="font-medium">Telegram</span>
-              </a>
-              <span className="text-muted-foreground">•</span>
-              <a 
-                href="https://x.com/highjack_me" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors duration-300"
-              >
-                <span className="text-lg">🐦</span>
-                <span className="font-medium">Twitter</span>
-              </a>
-            </div>
           </div>
 
           {/* Bottom Section - Recent Hijacks Table */}
