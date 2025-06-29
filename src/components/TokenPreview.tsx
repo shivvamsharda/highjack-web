@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -11,6 +12,7 @@ import LoadingSkeleton from './LoadingSkeleton';
 interface TokenPreviewProps {
   tokenName: string;
   ticker: string;
+  description?: string;
   imagePreview: string | null;
   xLink?: string;
   telegramLink?: string;
@@ -21,6 +23,7 @@ interface TokenPreviewProps {
 const TokenPreview: React.FC<TokenPreviewProps> = ({
   tokenName,
   ticker,
+  description,
   imagePreview,
   xLink,
   telegramLink,
@@ -203,6 +206,11 @@ const TokenPreview: React.FC<TokenPreviewProps> = ({
                     <div className="text-primary font-medium text-lg">
                       ${ticker || 'TICK'}
                     </div>
+                    {description && (
+                      <div className="text-sm text-muted-foreground max-w-xs">
+                        {description}
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -228,6 +236,12 @@ const TokenPreview: React.FC<TokenPreviewProps> = ({
                       <span className="text-muted-foreground">Image:</span>
                       <span className="text-primary font-semibold">
                         {imagePreview ? 'Updated' : 'No change'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Description:</span>
+                      <span className="text-primary font-semibold">
+                        {description ? 'Updated' : 'No change'}
                       </span>
                     </div>
                   </div>
