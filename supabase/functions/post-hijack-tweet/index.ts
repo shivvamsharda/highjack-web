@@ -1,10 +1,125 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
+import { createHmac } from "https://deno.land/std@0.168.0/node/crypto.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+// Twitter API credentials from environment
+const TWITTER_API_KEY = Deno.env.get("TWITTER_API_KEY")?.trim()
+const TWITTER_API_KEY_SECRET = Deno.env.get("TWITTER_API_KEY_SECRET")?.trim()
+const TWITTER_ACCESS_KEY = Deno.env.get("TWITTER_ACCESS_KEY")?.trim()
+const TWITTER_ACCESS_KEY_SECRET = Deno.env.get("TWITTER_ACCESS_KEY_SECRET")?.trim()
+
+function validateTwitterCredentials() {
+  if (!TWITTER_API_KEY) {
+    throw new Error("Missing TWITTER_API_KEY environment variable")
+  }
+  if (!TWITTER_API_KEY_SECRET) {
+    throw new Error("Missing TWITTER_API_KEY_SECRET environment variable")
+  }
+  if (!TWITTER_ACCESS_KEY) {
+    throw new Error("Missing TWITTER_ACCESS_KEY environment variable")
+  }
+  if (!TWITTER_ACCESS_KEY_SECRET) {
+    throw new Error("Missing TWITTER_ACCESS_KEY_SECRET environment variable")
+  }
+}
+
+function generateOAuthSignature(
+  method: string,
+  url: string,
+  params: Record<string, string>,
+  consumerSecret: string,
+  tokenSecret: string
+): string {
+  const signatureBaseString = `${method}&${encodeURIComponent(
+    url
+  )}&${encodeURIComponent(
+    Object.entries(params)
+      .sort()
+      .map(([k, v]) => `${k}=${v}`)
+      .join("&")
+  )}`
+  
+  const signingKey = `${encodeURIComponent(
+    consumerSecret
+  )}&${encodeURIComponent(tokenSecret)}`
+  
+  const hmacSha1 = createHmac("sha1", signingKey)
+  const signature = hmacSha1.update(signatureBaseString).digest("base64")
+  
+  console.log("Signature Base String:", signatureBaseString)
+  console.log("Generated Signature:", signature)
+  
+  return signature
+}
+
+function generateOAuthHeader(method: string, url: string): string {
+  const oauthParams = {
+    oauth_consumer_key: TWITTER_API_KEY!,
+    oauth_nonce: Math.random().toString(36).substring(2),
+    oauth_signature_method: "HMAC-SHA1",
+    oauth_timestamp: Math.floor(Date.now() / 1000).toString(),
+    oauth_token: TWITTER_ACCESS_KEY!,
+    oauth_version: "1.0",
+  }
+
+  const signature = generateOAuthSignature(
+    method,
+    url,
+    oauthParams,
+    TWITTER_API_KEY_SECRET!,
+    TWITTER_ACCESS_KEY_SECRET!
+  )
+
+  const signedOAuthParams = {
+    ...oauthParams,
+    oauth_signature: signature,
+  }
+
+  const entries = Object.entries(signedOAuthParams).sort((a, b) =>
+    a[0].localeCompare(b[0])
+  )
+
+  return (
+    "OAuth " +
+    entries
+      .map(([k, v]) => `${encodeURIComponent(k)}="${encodeURIComponent(v)}"`)
+      .join(", ")
+  )
+}
+
+async function sendTweet(tweetText: string): Promise<any> {
+  const url = "https://api.x.com/2/tweets"
+  const method = "POST"
+  const params = { text: tweetText }
+
+  const oauthHeader = generateOAuthHeader(method, url)
+  console.log("OAuth Header:", oauthHeader)
+
+  const response = await fetch(url, {
+    method: method,
+    headers: {
+      Authorization: oauthHeader,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(params),
+  })
+
+  const responseText = await response.text()
+  console.log("Twitter API Response:", responseText)
+
+  if (!response.ok) {
+    throw new Error(
+      `Twitter API error! status: ${response.status}, body: ${responseText}`
+    )
+  }
+
+  return JSON.parse(responseText)
 }
 
 serve(async (req) => {
@@ -24,6 +139,9 @@ serve(async (req) => {
     }
 
     console.log('Processing tweet for hijack:', hijack_id)
+    
+    // Validate Twitter credentials
+    validateTwitterCredentials()
 
     // Get hijack details from database
     const { data: hijack, error: hijackError } = await supabase
@@ -74,13 +192,31 @@ ${hijack.token_name} ($${hijack.ticker_symbol}) just got a new identity!
     console.log('Tweet content prepared:', tweetContent)
     console.log('Tweet length:', tweetContent.length)
 
-    // Store tweet in database for tracking
+    let tweetResult
+    let tweetStatus = 'success'
+    let errorMessage = null
+
+    try {
+      // Send the actual tweet
+      tweetResult = await sendTweet(tweetContent)
+      console.log('Tweet posted successfully:', tweetResult)
+    } catch (twitterError) {
+      console.error('Error posting tweet:', twitterError)
+      tweetStatus = 'failed'
+      errorMessage = twitterError instanceof Error ? twitterError.message : 'Unknown Twitter error'
+      tweetResult = null
+    }
+
+    // Store tweet record in database for tracking
     const { data: tweetRecord, error: tweetError } = await supabase
       .from('twitter_posts')
       .insert({
         hijack_id: hijack_id,
         tweet_content: tweetContent,
-        status: 'posted' // For now, we'll mark as posted since we don't have actual Twitter API
+        tweet_id: tweetResult?.data?.id || null,
+        status: tweetStatus,
+        error_message: errorMessage,
+        posted_at: tweetStatus === 'success' ? new Date().toISOString() : null
       })
       .select()
       .single()
@@ -92,16 +228,14 @@ ${hijack.token_name} ($${hijack.ticker_symbol}) just got a new identity!
 
     console.log('Tweet record created:', tweetRecord.id)
 
-    // Note: In a real implementation, you would use Twitter API here
-    // For now, we're just logging and storing the tweet content
-    console.log('Would post to Twitter:', tweetContent)
-
     return new Response(
       JSON.stringify({ 
-        success: true, 
-        message: 'Tweet prepared and logged',
+        success: tweetStatus === 'success',
+        message: tweetStatus === 'success' ? 'Tweet posted successfully' : 'Tweet failed to post',
         tweet_id: tweetRecord.id,
-        content: tweetContent
+        twitter_tweet_id: tweetResult?.data?.id || null,
+        content: tweetContent,
+        error: errorMessage
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
