@@ -353,6 +353,9 @@ async function uploadImageAndMetadata(
         }
       ],
       category: "image",
+      telegram: "https://t.me/highjackme",
+      twitter: "https://x.com/highjack_me",
+      website: "https://highjack.me/"
     }
   }
 
