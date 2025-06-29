@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
 import { createHmac } from "https://deno.land/std@0.168.0/node/crypto.ts"
@@ -143,7 +142,7 @@ serve(async (req) => {
     // Validate Twitter credentials
     validateTwitterCredentials()
 
-    // Get hijack details from database
+    // Get current hijack details from database
     const { data: hijack, error: hijackError } = await supabase
       .from('token_hijacks')
       .select('*')
@@ -155,16 +154,43 @@ serve(async (req) => {
       throw new Error('Hijack not found')
     }
 
-    // Base tweet content
-    let tweetContent = `🏴‍☠️ Token Hijacked! 
+    // Get the previous hijack to show what was transformed
+    const { data: previousHijacks, error: previousError } = await supabase
+      .from('token_hijacks')
+      .select('token_name, ticker_symbol')
+      .lt('created_at', hijack.created_at)
+      .eq('status', 'completed')
+      .order('created_at', { ascending: false })
+      .limit(1)
 
-${hijack.token_name} ($${hijack.ticker_symbol}) just got a new identity! 
+    if (previousError) {
+      console.error('Error fetching previous hijack:', previousError)
+    }
 
-🔥 Name: ${hijack.token_name}
-💎 Symbol: $${hijack.ticker_symbol}
+    const previousHijack = previousHijacks && previousHijacks.length > 0 ? previousHijacks[0] : null
+
+    // Build tweet content based on whether we have previous hijack info
+    let tweetContent = ''
+    
+    if (previousHijack) {
+      // Show transformation from previous identity to new identity
+      tweetContent = `🏴‍☠️ Token Hijacked! 
+
+${previousHijack.token_name} ($${previousHijack.ticker_symbol}) has been hijacked and transformed into ${hijack.token_name} ($${hijack.ticker_symbol})!
+
 👑 Hijacker: ${hijack.wallet_address.slice(0, 6)}...${hijack.wallet_address.slice(-4)}
 
 #TokenHijack #Solana #DeFi #HIGHJACK`
+    } else {
+      // Fall back to generic message if no previous hijack found
+      tweetContent = `🏴‍☠️ Token Hijacked! 
+
+Meet the new identity: ${hijack.token_name} ($${hijack.ticker_symbol})!
+
+👑 Hijacker: ${hijack.wallet_address.slice(0, 6)}...${hijack.wallet_address.slice(-4)}
+
+#TokenHijack #Solana #DeFi #HIGHJACK`
+    }
 
     // Add social links if they exist
     const socialLinks = []
