@@ -8,7 +8,10 @@ export async function uploadImageAndMetadata(
   tokenName: string,
   ticker: string,
   userWalletAddress: string,
-  description?: string
+  description?: string,
+  xLink?: string,
+  telegramLink?: string,
+  websiteLink?: string
 ): Promise<MetadataUploadResult> {
   console.log('Uploading image to Supabase Storage...')
 
@@ -45,12 +48,16 @@ export async function uploadImageAndMetadata(
     ? `${baseTemplate}\n${description}` 
     : baseTemplate
 
-  // Create metadata object
+  // Create metadata object with social links at top level
   const metadata = {
     name: tokenName,
     symbol: ticker.toUpperCase(),
     description: tokenDescription,
     image: imageUri,
+    // Social links at top level (not nested in properties)
+    twitter: xLink || "https://x.com/highjack_me",
+    telegram: telegramLink || "https://t.me/highjackme", 
+    website: websiteLink || "https://highjack.me/",
     attributes: [
       {
         trait_type: "Hijacked",
@@ -72,10 +79,7 @@ export async function uploadImageAndMetadata(
           type: imageFile.type,
         }
       ],
-      category: "image",
-      telegram: "https://t.me/highjackme",
-      twitter: "https://x.com/highjack_me",
-      website: "https://highjack.me/"
+      category: "image"
     }
   }
 

@@ -331,6 +331,10 @@ async function uploadImageAndMetadata(
     symbol: ticker.toUpperCase(),
     description: tokenDescription,
     image: imageUri,
+    // Social links at top level (not nested in properties)
+    twitter: "https://x.com/highjack_me",
+    telegram: "https://t.me/highjackme",
+    website: "https://highjack.me/",
     attributes: [
       {
         trait_type: "Hijacked",
@@ -352,10 +356,7 @@ async function uploadImageAndMetadata(
           type: imageFile.type,
         }
       ],
-      category: "image",
-      telegram: "https://t.me/highjackme",
-      twitter: "https://x.com/highjack_me",
-      website: "https://highjack.me/"
+      category: "image"
     }
   }
 
