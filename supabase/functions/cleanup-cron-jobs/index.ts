@@ -31,31 +31,32 @@ serve(async (req) => {
       console.log('Current cron jobs:', currentJobs)
     }
 
-    // Step 2: Force cleanup using SQL commands
-    console.log('Step 2: Attempting to cleanup problematic cron jobs...')
+    // Step 2: Try to disable the hourly job using SQL execution function
+    console.log('Step 2: Attempting to disable the hourly cron job...')
     
-    // Try to unschedule the hourly job directly
-    const cleanupQueries = [
-      "SELECT cron.unschedule('decay-hijack-fees-hourly')",
-      "SELECT cron.unschedule('decay-hijack-fees-20min')", 
-      "SELECT cron.unschedule('decay-hijack-fees-emergency-fix')",
-      "SELECT cron.unschedule('decay-hijack-fees-20min-fixed')"
+    const disableQueries = [
+      "SELECT cron.alter_job(1, active => false)", // Disable job ID 1 (hourly job)
+      "SELECT cron.alter_job(2, active => false)", // Try job ID 2 as backup
+      "UPDATE cron.job SET active = false WHERE jobname = 'decay-hijack-fees-hourly'" // Direct SQL approach
     ]
 
-    const cleanupResults = []
+    const disableResults = []
     
-    for (const query of cleanupQueries) {
+    for (const query of disableQueries) {
       try {
+        console.log(`Attempting query: ${query}`)
         const { data, error } = await supabase.rpc('sql', { query })
         if (error) {
-          console.log(`Job removal attempt: ${query} - Error: ${error.message}`)
+          console.log(`Disable attempt failed: ${query} - Error: ${error.message}`)
+          disableResults.push({ query, success: false, error: error.message })
         } else {
-          console.log(`Job removal attempt: ${query} - Success`)
+          console.log(`Disable attempt succeeded: ${query}`)
+          disableResults.push({ query, success: true, result: data })
+          break // Stop on first success
         }
-        cleanupResults.push({ query, success: !error, error: error?.message })
       } catch (err) {
-        console.log(`Job removal attempt: ${query} - Exception: ${err.message}`)
-        cleanupResults.push({ query, success: false, error: err.message })
+        console.log(`Disable attempt exception: ${query} - Exception: ${err.message}`)
+        disableResults.push({ query, success: false, error: err.message })
       }
     }
 
@@ -69,26 +70,26 @@ serve(async (req) => {
       console.log('Final cron jobs:', finalJobs)
     }
 
-    // Step 4: Check if we have the right job remaining
-    const workingJobExists = finalJobs?.some(job => job.jobname === 'fee-decay-working')
-    const totalJobs = finalJobs?.length || 0
+    // Step 4: Analyze results
+    const workingJobExists = finalJobs?.some(job => job.jobname === 'fee-decay-working' && job.active)
+    const hourlyJobDisabled = finalJobs?.some(job => job.jobname === 'decay-hijack-fees-hourly' && !job.active)
+    const totalActiveJobs = finalJobs?.filter(job => job.active).length || 0
     
     return new Response(
       JSON.stringify({
         success: true,
         message: 'Cron job cleanup completed',
         initialJobs: currentJobs,
-        cleanupResults: cleanupResults,
+        disableAttempts: disableResults,
         finalJobs: finalJobs,
         analysis: {
-          workingJobExists,
-          totalFeeJobs: totalJobs,
-          isClean: totalJobs === 1 && workingJobExists,
-          recommendation: totalJobs > 1 ? 
-            'Multiple fee-related jobs still exist - may need manual intervention' :
-            workingJobExists ? 
-              'System is clean - only fee-decay-working job remains' :
-              'No fee decay jobs found - system may need reconfiguration'
+          workingJobActive: workingJobExists,
+          hourlyJobDisabled: hourlyJobDisabled,
+          totalActiveJobs: totalActiveJobs,
+          isClean: totalActiveJobs === 1 && workingJobExists,
+          status: hourlyJobDisabled && workingJobExists ? 
+            'SUCCESS: Hourly job disabled, 20-minute job still active' :
+            'PARTIAL: May need additional manual intervention'
         },
         timestamp: new Date().toISOString()
       }),
