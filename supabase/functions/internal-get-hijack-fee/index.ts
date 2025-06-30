@@ -57,11 +57,16 @@ serve(async (req) => {
     const lastHijack = pricing.last_hijack_at ? new Date(pricing.last_hijack_at) : null
     const timeSinceLastHijack = lastHijack ? now.getTime() - lastHijack.getTime() : null
     const minutesSinceLastHijack = timeSinceLastHijack ? Math.floor(timeSinceLastHijack / (1000 * 60)) : null
+    
+    // Use consistent 20-minute intervals for all calculations
+    const decayIntervalMinutes = 20
     const nextDecreaseIn = lastHijack && minutesSinceLastHijack !== null 
-      ? Math.max(0, 60 - minutesSinceLastHijack) 
+      ? Math.max(0, decayIntervalMinutes - minutesSinceLastHijack) 
       : null
 
     console.log(`Current fee: ${pricing.current_fee_sol} SOL`)
+    console.log(`Minutes since last hijack: ${minutesSinceLastHijack}`)
+    console.log(`Next decrease in: ${nextDecreaseIn} minutes`)
     
     return new Response(
       JSON.stringify({
@@ -70,7 +75,8 @@ serve(async (req) => {
         lastHijackAt: pricing.last_hijack_at,
         nextFeeAfterHijack: Number(pricing.current_fee_sol) + 0.1,
         nextDecreaseIn: nextDecreaseIn,
-        timeSinceLastHijack: minutesSinceLastHijack
+        timeSinceLastHijack: minutesSinceLastHijack,
+        decayInterval: decayIntervalMinutes
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )

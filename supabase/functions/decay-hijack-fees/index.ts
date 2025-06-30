@@ -14,7 +14,11 @@ serve(async (req) => {
   }
 
   try {
-    console.log('Checking for fee decay...')
+    const body = await req.json().catch(() => ({}))
+    const isDebug = body.debug || body.manual_trigger
+    const triggerType = body.manual_trigger ? 'MANUAL' : body.scheduled ? 'SCHEDULED' : 'UNKNOWN'
+    
+    console.log(`[${triggerType}] Fee decay check initiated at ${new Date().toISOString()}`)
     
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
@@ -40,23 +44,39 @@ serve(async (req) => {
     const now = new Date()
     const lastHijack = pricing.last_hijack_at ? new Date(pricing.last_hijack_at) : null
     const currentFee = Number(pricing.current_fee_sol)
+    const minimumFee = 0.1
     
-    // Check if we should decay the fee
+    console.log(`Current state: fee=${currentFee} SOL, minimum=${minimumFee} SOL`)
+    console.log(`Last hijack: ${lastHijack ? lastHijack.toISOString() : 'NEVER'}`)
+    
+    // Calculate time since last hijack with detailed logging
     let shouldDecay = false
+    let minutesSinceLastHijack = 0
+    const decayIntervalMinutes = 20 // Standardized to 20 minutes
     
     if (lastHijack) {
-      const minutesSinceLastHijack = (now.getTime() - lastHijack.getTime()) / (1000 * 60)
+      const timeDiff = now.getTime() - lastHijack.getTime()
+      minutesSinceLastHijack = Math.floor(timeDiff / (1000 * 60))
+      
+      console.log(`Time since last hijack: ${minutesSinceLastHijack} minutes`)
+      console.log(`Decay threshold: ${decayIntervalMinutes} minutes`)
+      console.log(`Fee above minimum: ${currentFee > minimumFee}`)
+      
       // Decay if it's been more than 20 minutes since last hijack and fee is above minimum
-      shouldDecay = minutesSinceLastHijack >= 20 && currentFee > 0.1
+      shouldDecay = minutesSinceLastHijack >= decayIntervalMinutes && currentFee > minimumFee
     } else {
-      // If no hijacks ever, and fee is above minimum, decay it
-      shouldDecay = currentFee > 0.1
+      console.log('No hijacks recorded - checking if fee needs reset to minimum')
+      // If no hijacks ever, and fee is above minimum, decay it to minimum
+      shouldDecay = currentFee > minimumFee
+      minutesSinceLastHijack = 9999 // Indicate no hijack ever
     }
 
+    console.log(`Decay decision: ${shouldDecay ? 'YES' : 'NO'}`)
+
     if (shouldDecay) {
-      const newFee = Math.max(0.1, currentFee - 0.1) // Never go below 0.1 SOL
+      const newFee = Math.max(minimumFee, currentFee - 0.1) // Never go below minimum
       
-      console.log(`Decaying fee from ${currentFee} to ${newFee} SOL`)
+      console.log(`[DECAY] Reducing fee from ${currentFee} to ${newFee} SOL`)
       
       const { error: updateError } = await supabase
         .from('hijack_pricing')
@@ -74,25 +94,41 @@ serve(async (req) => {
         )
       }
 
+      console.log(`[SUCCESS] Fee successfully decayed to ${newFee} SOL`)
+      
       return new Response(
         JSON.stringify({
           success: true,
           message: `Fee decayed from ${currentFee} to ${newFee} SOL`,
           oldFee: currentFee,
           newFee: newFee,
-          decayed: true
+          decayed: true,
+          triggerType: triggerType,
+          minutesSinceLastHijack: minutesSinceLastHijack,
+          decayThreshold: decayIntervalMinutes
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     } else {
-      console.log(`No decay needed. Current fee: ${currentFee} SOL`)
+      const reasonsNoDecay = []
+      if (currentFee <= minimumFee) reasonsNoDecay.push(`fee at minimum (${minimumFee} SOL)`)
+      if (lastHijack && minutesSinceLastHijack < decayIntervalMinutes) {
+        reasonsNoDecay.push(`only ${minutesSinceLastHijack} minutes since last hijack (need ${decayIntervalMinutes})`)
+      }
+      
+      const reason = reasonsNoDecay.length > 0 ? reasonsNoDecay.join(', ') : 'unknown'
+      console.log(`[NO DECAY] Reason: ${reason}`)
       
       return new Response(
         JSON.stringify({
           success: true,
-          message: 'No fee decay needed',
+          message: `No fee decay needed - ${reason}`,
           currentFee: currentFee,
-          decayed: false
+          decayed: false,
+          triggerType: triggerType,
+          minutesSinceLastHijack: minutesSinceLastHijack,
+          decayThreshold: decayIntervalMinutes,
+          nextDecayIn: lastHijack ? Math.max(0, decayIntervalMinutes - minutesSinceLastHijack) : 0
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
@@ -104,7 +140,8 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: 'Internal server error' 
+        error: 'Internal server error',
+        details: error.message 
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
