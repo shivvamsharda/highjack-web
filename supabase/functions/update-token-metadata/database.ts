@@ -97,6 +97,25 @@ export async function updateHijackRecordSuccess(
     console.error('Failed to call Twitter bot:', error)
     // Don't throw error here - Twitter posting failure shouldn't fail the entire hijack
   }
+
+  // Call Telegram bot edge function directly
+  try {
+    console.log('Calling Telegram bot to post message for hijack:', recordId)
+    
+    const { data: telegramResponse, error: telegramError } = await supabase.functions.invoke('post-hijack-telegram', {
+      body: { hijack_id: recordId }
+    })
+
+    if (telegramError) {
+      console.error('Error calling Telegram bot:', telegramError)
+      // Don't throw error here - Telegram posting failure shouldn't fail the entire hijack
+    } else {
+      console.log('Telegram bot called successfully:', telegramResponse)
+    }
+  } catch (error) {
+    console.error('Failed to call Telegram bot:', error)
+    // Don't throw error here - Telegram posting failure shouldn't fail the entire hijack
+  }
 }
 
 export async function updateHijackRecordError(

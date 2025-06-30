@@ -36,6 +36,50 @@ export type Database = {
         }
         Relationships: []
       }
+      telegram_posts: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          hijack_id: string
+          id: string
+          message_content: string
+          posted_at: string | null
+          status: string
+          telegram_message_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          hijack_id: string
+          id?: string
+          message_content: string
+          posted_at?: string | null
+          status?: string
+          telegram_message_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          hijack_id?: string
+          id?: string
+          message_content?: string
+          posted_at?: string | null
+          status?: string
+          telegram_message_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "telegram_posts_hijack_id_fkey"
+            columns: ["hijack_id"]
+            isOneToOne: false
+            referencedRelation: "token_hijacks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       token_hijacks: {
         Row: {
           block_time: number | null
