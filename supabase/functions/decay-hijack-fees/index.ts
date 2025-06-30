@@ -16,9 +16,13 @@ serve(async (req) => {
   try {
     const body = await req.json().catch(() => ({}))
     const isDebug = body.debug || body.manual_trigger
+    const isEmergencyFix = body.emergency_fix
     const triggerType = body.manual_trigger ? 'MANUAL' : body.scheduled ? 'SCHEDULED' : 'UNKNOWN'
     
     console.log(`[${triggerType}] Fee decay check initiated at ${new Date().toISOString()}`)
+    if (isEmergencyFix) {
+      console.log('[EMERGENCY_FIX] Running emergency decay fix mode')
+    }
     
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
@@ -62,8 +66,15 @@ serve(async (req) => {
       console.log(`Decay threshold: ${decayIntervalMinutes} minutes`)
       console.log(`Fee above minimum: ${currentFee > minimumFee}`)
       
-      // Decay if it's been more than 20 minutes since last hijack and fee is above minimum
-      shouldDecay = minutesSinceLastHijack >= decayIntervalMinutes && currentFee > minimumFee
+      // EMERGENCY FIX: If it's been more than 4 hours (240 minutes), force reset to minimum
+      if (isEmergencyFix && minutesSinceLastHijack > 240) {
+        console.log(`[EMERGENCY] ${minutesSinceLastHijack} minutes is way too long, forcing reset to minimum`)
+        shouldDecay = true
+        // Force to minimum in emergency mode
+      } else {
+        // Normal decay logic: decay if it's been more than 20 minutes since last hijack and fee is above minimum
+        shouldDecay = minutesSinceLastHijack >= decayIntervalMinutes && currentFee > minimumFee
+      }
     } else {
       console.log('No hijacks recorded - checking if fee needs reset to minimum')
       // If no hijacks ever, and fee is above minimum, decay it to minimum
@@ -74,9 +85,17 @@ serve(async (req) => {
     console.log(`Decay decision: ${shouldDecay ? 'YES' : 'NO'}`)
 
     if (shouldDecay) {
-      const newFee = Math.max(minimumFee, currentFee - 0.1) // Never go below minimum
+      let newFee: number
       
-      console.log(`[DECAY] Reducing fee from ${currentFee} to ${newFee} SOL`)
+      if (isEmergencyFix && minutesSinceLastHijack > 240) {
+        // Emergency: Force to minimum
+        newFee = minimumFee
+        console.log(`[EMERGENCY DECAY] Forcing fee from ${currentFee} to ${newFee} SOL due to ${minutesSinceLastHijack} minutes delay`)
+      } else {
+        // Normal decay: subtract 0.1
+        newFee = Math.max(minimumFee, currentFee - 0.1)
+        console.log(`[NORMAL DECAY] Reducing fee from ${currentFee} to ${newFee} SOL`)
+      }
       
       const { error: updateError } = await supabase
         .from('hijack_pricing')
@@ -94,16 +113,17 @@ serve(async (req) => {
         )
       }
 
-      console.log(`[SUCCESS] Fee successfully decayed to ${newFee} SOL`)
+      console.log(`[SUCCESS] Fee successfully updated to ${newFee} SOL`)
       
       return new Response(
         JSON.stringify({
           success: true,
-          message: `Fee decayed from ${currentFee} to ${newFee} SOL`,
+          message: `Fee ${isEmergencyFix && minutesSinceLastHijack > 240 ? 'emergency reset' : 'decayed'} from ${currentFee} to ${newFee} SOL`,
           oldFee: currentFee,
           newFee: newFee,
           decayed: true,
           triggerType: triggerType,
+          emergencyFix: isEmergencyFix,
           minutesSinceLastHijack: minutesSinceLastHijack,
           decayThreshold: decayIntervalMinutes
         }),
@@ -126,6 +146,7 @@ serve(async (req) => {
           currentFee: currentFee,
           decayed: false,
           triggerType: triggerType,
+          emergencyFix: isEmergencyFix,
           minutesSinceLastHijack: minutesSinceLastHijack,
           decayThreshold: decayIntervalMinutes,
           nextDecayIn: lastHijack ? Math.max(0, decayIntervalMinutes - minutesSinceLastHijack) : 0
