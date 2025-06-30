@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Button } from '@/components/ui/button';
@@ -8,10 +7,12 @@ import { Zap, AlertCircle, Lock, Unlock, CheckCircle, TrendingUp } from 'lucide-
 import { useToast } from '@/hooks/use-toast';
 import { useTokenMetadata } from '@/hooks/useTokenMetadata';
 import { useHijackFeeContext } from '@/contexts/HijackFeeContext';
+import { useHijackTimer } from '@/hooks/useHijackTimer';
 import FloatingLabelInput from './FloatingLabelInput';
 import DragDropZone from './DragDropZone';
 import TokenPreview from './TokenPreview';
 import SuccessModal from './SuccessModal';
+import HijackTimer from './HijackTimer';
 
 interface HijackFormProps {
   isConnected: boolean;
@@ -36,6 +37,7 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
 
   const { updateTokenMetadata, isUpdating, progress } = useTokenMetadata();
   const { feeInfo, isLoading: isFeeLoading, error: feeError } = useHijackFeeContext();
+  const { isHijackingAllowed, formattedTimeRemaining } = useHijackTimer();
 
   const handleImageUpload = (file: File) => {
     setImageFile(file);
@@ -58,6 +60,15 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!isHijackingAllowed) {
+      toast({
+        title: "Hijacking Not Yet Available",
+        description: "Wait for the countdown to finish before attempting your first hijack.",
+        variant: "destructive",
+      });
+      return;
+    }
     
     if (!tokenName || !ticker || !imageFile) {
       toast({
@@ -152,7 +163,7 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
     setUpdateExplorerUrl('');
   };
 
-  const isFormValid = tokenName && ticker && imageFile && isConnected && feeInfo;
+  const isFormValid = tokenName && ticker && imageFile && isConnected && feeInfo && isHijackingAllowed;
   const LockIcon = isFormValid ? Unlock : Lock;
 
   const getProgressIcon = () => {
@@ -166,6 +177,11 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
   return (
     <>
       <div className={`transition-all duration-500 ${isConnected ? 'animate-slide-up' : 'opacity-60'}`}>
+        {/* Show timer when hijacking is not yet allowed */}
+        {!isHijackingAllowed && formattedTimeRemaining && (
+          <HijackTimer formattedTimeRemaining={formattedTimeRemaining} />
+        )}
+
         {/* Two Column Layout - Preview Left, Form Right */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Left Column - Token Preview */}
@@ -184,14 +200,17 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
 
           {/* Right Column - Hijack Form */}
           <div className="space-y-6">
-            <Card className={`bg-card/80 backdrop-blur-sm border-border transition-all duration-300 ${isConnected ? 'border-primary/30 glow-red' : ''}`}>
+            <Card className={`bg-card/80 backdrop-blur-sm border-border transition-all duration-300 ${isConnected && isHijackingAllowed ? 'border-primary/30 glow-red' : ''} ${!isHijackingAllowed ? 'opacity-60' : ''}`}>
               <CardHeader>
                 <CardTitle className="text-2xl md:text-3xl flex items-center gap-3 text-glow font-space-grotesk">
                   <Zap className="w-8 h-8 text-primary animate-pulse" />
                   Hijack Token Metadata
                 </CardTitle>
                 <p className="text-muted-foreground text-lg">
-                  Steal the billboard. Make it yours. Leave your mark on-chain.
+                  {!isHijackingAllowed 
+                    ? "Preparing for launch. Form will be enabled when countdown completes."
+                    : "Steal the billboard. Make it yours. Leave your mark on-chain."
+                  }
                 </p>
               </CardHeader>
               
@@ -204,7 +223,7 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
                       value={tokenName}
                       onChange={setTokenName}
                       placeholder="Enter the new identity..."
-                      disabled={!isConnected || isUpdating}
+                      disabled={!isConnected || !isHijackingAllowed || isUpdating}
                     />
 
                     <FloatingLabelInput
@@ -214,7 +233,7 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
                       onChange={setTicker}
                       placeholder="SYMBOL"
                       maxLength={10}
-                      disabled={!isConnected || isUpdating}
+                      disabled={!isConnected || !isHijackingAllowed || isUpdating}
                       transform={(value) => value.toUpperCase()}
                     />
                   </div>
@@ -228,7 +247,7 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
                       placeholder="Describe your token's purpose, mission, or story..."
-                      disabled={!isConnected || isUpdating}
+                      disabled={!isConnected || !isHijackingAllowed || isUpdating}
                       maxLength={250}
                       rows={3}
                       className="bg-background/50 border-border focus:border-primary/50 transition-colors resize-none"
@@ -245,7 +264,7 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
                     <DragDropZone
                       onFileUpload={handleImageUpload}
                       imagePreview={imagePreview}
-                      disabled={!isConnected || isUpdating}
+                      disabled={!isConnected || !isHijackingAllowed || isUpdating}
                     />
                   </div>
 
@@ -261,7 +280,7 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
                         value={xLink}
                         onChange={setXLink}
                         placeholder="https://x.com/username"
-                        disabled={!isConnected || isUpdating}
+                        disabled={!isConnected || !isHijackingAllowed || isUpdating}
                       />
 
                       <FloatingLabelInput
@@ -270,7 +289,7 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
                         value={telegramLink}
                         onChange={setTelegramLink}
                         placeholder="https://t.me/username"
-                        disabled={!isConnected || isUpdating}
+                        disabled={!isConnected || !isHijackingAllowed || isUpdating}
                       />
 
                       <FloatingLabelInput
@@ -279,7 +298,7 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
                         value={websiteLink}
                         onChange={setWebsiteLink}
                         placeholder="https://yourwebsite.com"
-                        disabled={!isConnected || isUpdating}
+                        disabled={!isConnected || !isHijackingAllowed || isUpdating}
                       />
                     </div>
                   </div>
@@ -355,6 +374,11 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
                         <div className="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin" />
                         {progress || 'Processing...'}
                       </div>
+                    ) : !isHijackingAllowed ? (
+                      <div className="flex items-center gap-3">
+                        <Lock className="w-6 h-6" />
+                        🔒 Hijacking Locked Until 8:20 PM UTC
+                      </div>
                     ) : (
                       <div className="flex items-center gap-3">
                         <LockIcon className="w-6 h-6" />
@@ -366,6 +390,12 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
                   {!isConnected && (
                     <p className="text-center text-muted-foreground">
                       Connect your wallet above to start the hijack
+                    </p>
+                  )}
+
+                  {!isHijackingAllowed && (
+                    <p className="text-center text-muted-foreground">
+                      First hijack launches at 8:20 PM UTC today. Get ready! 🚀
                     </p>
                   )}
                 </form>
