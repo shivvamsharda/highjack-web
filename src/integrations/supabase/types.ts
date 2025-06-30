@@ -231,6 +231,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_hourly_cron_job: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       decay_fee_direct: {
         Args: Record<PropertyKey, never>
         Returns: Json

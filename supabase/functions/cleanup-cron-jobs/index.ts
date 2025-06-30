@@ -14,54 +14,25 @@ serve(async (req) => {
   }
 
   try {
-    console.log('CRON CLEANUP - Starting cron job cleanup process')
+    console.log('FINAL CRON CLEANUP - Starting final cleanup verification')
     
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-    // Step 1: Get current cron jobs status
-    console.log('Step 1: Checking current cron jobs...')
-    const { data: currentJobs, error: cronError } = await supabase.rpc('get_cron_job_status')
+    // Step 1: Run the cleanup function we created
+    console.log('Step 1: Executing cleanup function...')
+    const { data: cleanupResult, error: cleanupError } = await supabase.rpc('cleanup_hourly_cron_job')
     
-    if (cronError) {
-      console.error('Error checking cron jobs:', cronError)
+    if (cleanupError) {
+      console.error('Error running cleanup function:', cleanupError)
     } else {
-      console.log('Current cron jobs:', currentJobs)
+      console.log('Cleanup function result:', cleanupResult)
     }
 
-    // Step 2: Try to disable the hourly job using SQL execution function
-    console.log('Step 2: Attempting to disable the hourly cron job...')
-    
-    const disableQueries = [
-      "SELECT cron.alter_job(1, active => false)", // Disable job ID 1 (hourly job)
-      "SELECT cron.alter_job(2, active => false)", // Try job ID 2 as backup
-      "UPDATE cron.job SET active = false WHERE jobname = 'decay-hijack-fees-hourly'" // Direct SQL approach
-    ]
-
-    const disableResults = []
-    
-    for (const query of disableQueries) {
-      try {
-        console.log(`Attempting query: ${query}`)
-        const { data, error } = await supabase.rpc('sql', { query })
-        if (error) {
-          console.log(`Disable attempt failed: ${query} - Error: ${error.message}`)
-          disableResults.push({ query, success: false, error: error.message })
-        } else {
-          console.log(`Disable attempt succeeded: ${query}`)
-          disableResults.push({ query, success: true, result: data })
-          break // Stop on first success
-        }
-      } catch (err) {
-        console.log(`Disable attempt exception: ${query} - Exception: ${err.message}`)
-        disableResults.push({ query, success: false, error: err.message })
-      }
-    }
-
-    // Step 3: Verify final state
-    console.log('Step 3: Verifying final cron job state...')
+    // Step 2: Verify current cron jobs status
+    console.log('Step 2: Verifying final cron job state...')
     const { data: finalJobs, error: finalError } = await supabase.rpc('get_cron_job_status')
     
     if (finalError) {
@@ -70,26 +41,50 @@ serve(async (req) => {
       console.log('Final cron jobs:', finalJobs)
     }
 
+    // Step 3: Check fee status
+    console.log('Step 3: Checking current fee status...')
+    const { data: pricing, error: pricingError } = await supabase
+      .from('hijack_pricing')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single()
+
     // Step 4: Analyze results
-    const workingJobExists = finalJobs?.some(job => job.jobname === 'fee-decay-working' && job.active)
-    const hourlyJobDisabled = finalJobs?.some(job => job.jobname === 'decay-hijack-fees-hourly' && !job.active)
-    const totalActiveJobs = finalJobs?.filter(job => job.active).length || 0
-    
+    const activeCronJobs = finalJobs?.filter(job => job.active) || []
+    const hourlyJobExists = activeCronJobs.some(job => job.jobname === 'decay-hijack-fees-hourly')
+    const workingJobExists = activeCronJobs.some(job => job.jobname === 'fee-decay-working')
+    const cleanupSuccess = !hourlyJobExists && workingJobExists && activeCronJobs.length === 1
+
+    console.log('FINAL CLEANUP ANALYSIS:', {
+      totalActiveCronJobs: activeCronJobs.length,
+      hourlyJobRemoved: !hourlyJobExists,
+      workingJobActive: workingJobExists,
+      cleanupSuccess,
+      currentFee: pricing?.current_fee_sol
+    })
+
     return new Response(
       JSON.stringify({
         success: true,
-        message: 'Cron job cleanup completed',
-        initialJobs: currentJobs,
-        disableAttempts: disableResults,
-        finalJobs: finalJobs,
-        analysis: {
-          workingJobActive: workingJobExists,
-          hourlyJobDisabled: hourlyJobDisabled,
-          totalActiveJobs: totalActiveJobs,
-          isClean: totalActiveJobs === 1 && workingJobExists,
-          status: hourlyJobDisabled && workingJobExists ? 
-            'SUCCESS: Hourly job disabled, 20-minute job still active' :
-            'PARTIAL: May need additional manual intervention'
+        cleanupSuccess,
+        message: cleanupSuccess ? 
+          '✅ SUCCESS: Cleanup completed! Only the 20-minute fee decay job is now active.' :
+          '⚠️ ATTENTION: Cleanup may need manual intervention.',
+        details: {
+          cleanupFunction: cleanupResult,
+          finalCronJobs: activeCronJobs,
+          analysis: {
+            totalActiveCronJobs: activeCronJobs.length,
+            hourlyJobRemoved: !hourlyJobExists,
+            workingJobActive: workingJobExists,
+            expectedState: cleanupSuccess
+          },
+          feeStatus: pricing ? {
+            currentFee: pricing.current_fee_sol,
+            lastHijackAt: pricing.last_hijack_at,
+            lastUpdateAt: pricing.last_fee_update_at
+          } : null
         },
         timestamp: new Date().toISOString()
       }),
@@ -97,12 +92,12 @@ serve(async (req) => {
     )
 
   } catch (error) {
-    console.error('Error in cleanup-cron-jobs function:', error)
+    console.error('Error in final cleanup function:', error)
     
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: 'Cron cleanup failed',
+        error: 'Final cleanup failed',
         details: error.message 
       }),
       { 
