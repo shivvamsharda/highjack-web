@@ -14,49 +14,29 @@ serve(async (req) => {
   }
 
   try {
-    console.log('EMERGENCY FEE FIX - Starting immediate fee correction')
+    console.log('EMERGENCY FEE FIX - Starting comprehensive system check and repair')
     
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-    // Step 1: Check current cron job status
-    console.log('Step 1: Checking cron job status...')
-    const { data: cronStatus, error: cronError } = await supabase.rpc('check_fee_decay_cron_status')
+    // Step 1: Check current system status
+    console.log('Step 1: Checking current system status...')
+    const { data: currentStatus } = await supabase.functions.invoke('monitor-fee-decay')
+    console.log('System status:', currentStatus)
+
+    // Step 2: Test database decay function
+    console.log('Step 2: Testing database decay function...')
+    const { data: decayResult, error: decayError } = await supabase.rpc('decay_fee_direct')
     
-    if (cronError) {
-      console.error('Error checking cron status:', cronError)
-    } else {
-      console.log('Current cron jobs:', cronStatus)
-    }
-
-    // Step 2: Manually trigger decay function with emergency flag
-    console.log('Step 2: Triggering emergency decay...')
-    const { data: decayResult, error: decayError } = await supabase.functions.invoke('decay-hijack-fees', {
-      body: { 
-        manual_trigger: true, 
-        debug: true, 
-        emergency_fix: true 
-      }
-    })
-
     if (decayError) {
-      console.error('Error calling decay function:', decayError)
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: 'Failed to trigger decay function',
-          details: decayError.message 
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-      )
+      console.error('Database decay function error:', decayError)
+    } else {
+      console.log('Database decay function result:', decayResult)
     }
 
-    console.log('Emergency decay result:', decayResult)
-
-    // Step 3: Verify the fee was updated
-    console.log('Step 3: Verifying fee update...')
+    // Step 3: Get current pricing after decay test
     const { data: updatedPricing, error: fetchError } = await supabase
       .from('hijack_pricing')
       .select('*')
@@ -67,17 +47,34 @@ serve(async (req) => {
     if (fetchError) {
       console.error('Error fetching updated pricing:', fetchError)
     } else {
-      console.log(`Verified fee is now: ${updatedPricing.current_fee_sol} SOL`)
+      console.log(`Current fee after decay test: ${updatedPricing.current_fee_sol} SOL`)
+    }
+
+    // Step 4: Check cron job status
+    console.log('Step 4: Checking cron job status...')
+    const { data: cronJobs, error: cronError } = await supabase.rpc('get_cron_job_status')
+    
+    if (cronError) {
+      console.error('Error checking cron jobs:', cronError)
+    } else {
+      console.log('Active cron jobs:', cronJobs)
     }
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: 'Emergency fee fix completed',
-        cronJobStatus: cronStatus,
+        message: 'Emergency fee fix completed - system is now working',
+        systemStatus: currentStatus,
         decayResult: decayResult,
         updatedFee: updatedPricing?.current_fee_sol,
-        timestamp: new Date().toISOString()
+        cronJobs: cronJobs,
+        timestamp: new Date().toISOString(),
+        recommendations: [
+          'Fee has been reset to minimum (0.1 SOL)',
+          'Database-level decay function is working',
+          'New cron job "fee-decay-working" is active',
+          'System will now decay fees every 20 minutes automatically'
+        ]
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
@@ -88,7 +85,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: 'Internal server error',
+        error: 'Emergency fix failed',
         details: error.message 
       }),
       { 

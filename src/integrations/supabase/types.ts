@@ -231,7 +231,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      decay_fee_direct: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      get_cron_job_status: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          jobname: string
+          schedule: string
+          active: boolean
+          jobid: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
