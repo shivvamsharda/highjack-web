@@ -45,9 +45,9 @@ serve(async (req) => {
     let shouldDecay = false
     
     if (lastHijack) {
-      const hoursSinceLastHijack = (now.getTime() - lastHijack.getTime()) / (1000 * 60 * 60)
-      // Decay if it's been more than 1 hour since last hijack and fee is above minimum
-      shouldDecay = hoursSinceLastHijack >= 1 && currentFee > 0.1
+      const minutesSinceLastHijack = (now.getTime() - lastHijack.getTime()) / (1000 * 60)
+      // Decay if it's been more than 20 minutes since last hijack and fee is above minimum
+      shouldDecay = minutesSinceLastHijack >= 20 && currentFee > 0.1
     } else {
       // If no hijacks ever, and fee is above minimum, decay it
       shouldDecay = currentFee > 0.1

@@ -49,7 +49,7 @@ serve(async (req) => {
     
     // Calculate when next fee decrease will happen (if no new hijacks)
     const nextDecreaseIn = lastHijack && minutesSinceLastHijack !== null 
-      ? Math.max(0, 60 - minutesSinceLastHijack) 
+      ? Math.max(0, 20 - minutesSinceLastHijack) 
       : null
 
     console.log(`Current fee: ${pricing.current_fee_sol} SOL`)
