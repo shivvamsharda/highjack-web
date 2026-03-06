@@ -47,47 +47,46 @@ const DragDropZone: React.FC<DragDropZoneProps> = ({
   };
 
   return (
-    <div
-      className={`drag-drop-zone ${isDragging ? 'dragover' : ''} ${
-        disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
-      } relative overflow-hidden group`}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
-    >
-      <input
-        type="file"
-        accept="image/*"
-        onChange={handleFileSelect}
-        disabled={disabled}
-        className="absolute inset-0 opacity-0 cursor-pointer disabled:cursor-not-allowed"
-      />
-      
-      {imagePreview ? (
-        <div className="relative h-48 rounded-lg overflow-hidden">
-          <img
-            src={imagePreview}
-            alt="Preview"
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-            <span className="text-white font-medium">Click or drag to replace</span>
+    <div className="forge-input-row">
+      <label className={`forge-input-label ${disabled ? 'opacity-50' : ''}`}>
+        Image
+      </label>
+      <span className="forge-colon">:</span>
+      <div
+        className={`relative flex-1 overflow-hidden rounded-md border transition-all duration-300 ${
+          isDragging ? 'border-[#ff719a] shadow-[0_0_18px_rgba(255,67,128,0.45)]' : 'border-[#8f3f5e]'
+        } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:border-primary/80'}`}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
+        <input
+          type="file"
+          accept="image/*"
+          onChange={handleFileSelect}
+          disabled={disabled}
+          className="absolute inset-0 opacity-0 cursor-pointer disabled:cursor-not-allowed"
+        />
+        <div className="flex min-h-11 items-center justify-between gap-3 bg-[rgba(24,9,18,0.8)] px-4 py-2">
+          <div className="flex min-w-0 items-center gap-3">
+            {imagePreview ? (
+              <img
+                src={imagePreview}
+                alt="Selected token art"
+                className="h-8 w-8 rounded object-cover ring-1 ring-[#ff7ca5]"
+              />
+            ) : (
+              <Upload className="h-4 w-4 text-[#f7c9d7]" />
+            )}
+            <span className="truncate text-sm font-semibold uppercase tracking-wide text-[#ffdce7]">
+              {imagePreview ? 'Image selected' : 'Select file'}
+            </span>
+          </div>
+          <div className="text-[11px] uppercase tracking-wide text-[#b794a2]">
+            PNG JPG
           </div>
         </div>
-      ) : (
-        <div className="h-48 flex flex-col items-center justify-center text-center p-6">
-          <Upload className="w-12 h-12 text-primary mb-4 animate-pulse" />
-          <div className="text-lg font-medium text-foreground mb-2">
-            Drop your new PFP here
-          </div>
-          <div className="text-sm text-muted-foreground">
-            or <span className="text-primary underline">click to browse</span>
-          </div>
-          <div className="text-xs text-muted-foreground mt-2">
-            PNG, JPG, GIF up to 10MB
-          </div>
-        </div>
-      )}
+      </div>
     </div>
   );
 };

@@ -20,6 +20,7 @@ const SolanaWalletProvider: React.FC<SolanaWalletProviderProps> = ({ children })
   const [rpcEndpoint, setRpcEndpoint] = useState<string | null>(null);
   const [rpcError, setRpcError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const networkSetting = import.meta.env.VITE_SOLANA_NETWORK?.toLowerCase();
 
   useEffect(() => {
     const fetchRpcEndpoint = async () => {
@@ -52,8 +53,8 @@ const SolanaWalletProvider: React.FC<SolanaWalletProviderProps> = ({ children })
     fetchRpcEndpoint();
   }, []);
 
-  // Use mainnet for production - this is where real SOL transactions happen
-  const network = WalletAdapterNetwork.Mainnet;
+  const network =
+    networkSetting === 'devnet' ? WalletAdapterNetwork.Devnet : WalletAdapterNetwork.Mainnet;
   
   // Use the same RPC endpoint as the backend for consistency
   const endpoint = useMemo(() => rpcEndpoint, [rpcEndpoint]);
@@ -61,9 +62,9 @@ const SolanaWalletProvider: React.FC<SolanaWalletProviderProps> = ({ children })
   const wallets = useMemo(
     () => [
       new PhantomWalletAdapter(),
-      new SolflareWalletAdapter(),
+      new SolflareWalletAdapter({ network }),
     ],
-    []
+    [network]
   );
 
   // Show loading state while fetching RPC endpoint

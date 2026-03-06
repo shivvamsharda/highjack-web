@@ -1,16 +1,14 @@
 import React, { useState } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
+import { CheckCircle, Lock, Unlock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { Zap, AlertCircle, Lock, Unlock, CheckCircle, TrendingUp } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useTokenMetadata } from '@/hooks/useTokenMetadata';
 import { useHijackFeeContext } from '@/contexts/HijackFeeContext';
 import { useHijackTimer } from '@/hooks/useHijackTimer';
 import FloatingLabelInput from './FloatingLabelInput';
 import DragDropZone from './DragDropZone';
-import TokenPreview from './TokenPreview';
 import SuccessModal from './SuccessModal';
 import HijackTimer from './HijackTimer';
 
@@ -20,24 +18,21 @@ interface HijackFormProps {
 
 const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
   const { publicKey } = useWallet();
+  const { toast } = useToast();
+  const { updateTokenMetadata, isUpdating, progress } = useTokenMetadata();
+  const { feeInfo, isLoading: isFeeLoading, error: feeError } = useHijackFeeContext();
+  const { isHijackingAllowed, formattedTimeRemaining } = useHijackTimer();
+
   const [tokenName, setTokenName] = useState('');
   const [ticker, setTicker] = useState('');
   const [description, setDescription] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [xLink, setXLink] = useState('');
-  const [telegramLink, setTelegramLink] = useState('');
-  const [websiteLink, setWebsiteLink] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
-  const [transactionSignature, setTransactionSignature] = useState<string>('');
-  const [updateTransactionSignature, setUpdateTransactionSignature] = useState<string>('');
-  const [explorerUrl, setExplorerUrl] = useState<string>('');
-  const [updateExplorerUrl, setUpdateExplorerUrl] = useState<string>('');
-  const { toast } = useToast();
-
-  const { updateTokenMetadata, isUpdating, progress } = useTokenMetadata();
-  const { feeInfo, isLoading: isFeeLoading, error: feeError } = useHijackFeeContext();
-  const { isHijackingAllowed, formattedTimeRemaining } = useHijackTimer();
+  const [transactionSignature, setTransactionSignature] = useState('');
+  const [updateTransactionSignature, setUpdateTransactionSignature] = useState('');
+  const [explorerUrl, setExplorerUrl] = useState('');
+  const [updateExplorerUrl, setUpdateExplorerUrl] = useState('');
 
   const handleImageUpload = (file: File) => {
     setImageFile(file);
@@ -48,79 +43,41 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
     reader.readAsDataURL(file);
   };
 
-  const validateUrl = (url: string): boolean => {
-    if (!url.trim()) return true; // Empty URLs are valid (optional)
-    try {
-      new URL(url);
-      return true;
-    } catch {
-      return false;
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!isHijackingAllowed) {
       toast({
-        title: "Hijacking Not Yet Available",
-        description: "Wait for the countdown to finish before attempting your first hijack.",
-        variant: "destructive",
+        title: 'Forge Locked',
+        description: 'Wait for the launch countdown before forging a new takeover.',
+        variant: 'destructive',
       });
       return;
     }
-    
+
     if (!tokenName || !ticker || !imageFile) {
       toast({
-        title: "Missing Information",
-        description: "Fill all required fields to complete the hijack.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Validate social links if provided
-    if (xLink && !validateUrl(xLink)) {
-      toast({
-        title: "Invalid X Link",
-        description: "Please enter a valid URL for X link.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (telegramLink && !validateUrl(telegramLink)) {
-      toast({
-        title: "Invalid Telegram Link",
-        description: "Please enter a valid URL for Telegram link.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (websiteLink && !validateUrl(websiteLink)) {
-      toast({
-        title: "Invalid Website Link",
-        description: "Please enter a valid URL for website link.",
-        variant: "destructive",
+        title: 'Missing Information',
+        description: 'Name, symbol, and image are required.',
+        variant: 'destructive',
       });
       return;
     }
 
     if (!publicKey) {
       toast({
-        title: "Wallet Not Connected",
-        description: "Please connect your wallet first.",
-        variant: "destructive",
+        title: 'Wallet Not Connected',
+        description: 'Connect your wallet first.',
+        variant: 'destructive',
       });
       return;
     }
 
     if (!feeInfo) {
       toast({
-        title: "Fee Loading",
-        description: "Please wait for the current fee to load.",
-        variant: "destructive",
+        title: 'Fee Loading',
+        description: 'Current forge fee is still loading. Try again in a moment.',
+        variant: 'destructive',
       });
       return;
     }
@@ -131,10 +88,7 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
       imageFile,
       userWalletAddress: publicKey.toBase58(),
       currentFee: feeInfo.currentFee,
-      xLink: xLink.trim() || undefined,
-      telegramLink: telegramLink.trim() || undefined,
-      websiteLink: websiteLink.trim() || undefined,
-      description: description.trim() || undefined
+      description: description.trim() || undefined,
     });
 
     if (result.success && result.transactionSignature) {
@@ -148,260 +102,138 @@ const HijackForm: React.FC<HijackFormProps> = ({ isConnected }) => {
 
   const handleSuccessClose = () => {
     setShowSuccess(false);
-    // Reset form
     setTokenName('');
     setTicker('');
     setDescription('');
     setImageFile(null);
     setImagePreview(null);
-    setXLink('');
-    setTelegramLink('');
-    setWebsiteLink('');
     setTransactionSignature('');
     setUpdateTransactionSignature('');
     setExplorerUrl('');
     setUpdateExplorerUrl('');
   };
 
-  const isFormValid = tokenName && ticker && imageFile && isConnected && feeInfo && isHijackingAllowed;
+  const isFormValid = !!tokenName && !!ticker && !!imageFile && isConnected && !!feeInfo && isHijackingAllowed;
   const LockIcon = isFormValid ? Unlock : Lock;
 
   const getProgressIcon = () => {
-    if (progress.includes('Waiting for transaction confirmation') || 
-        progress.includes('Payment confirmed and finalized')) {
-      return <CheckCircle className="w-5 h-5 text-green-500" />;
+    if (
+      progress?.includes('Waiting for transaction confirmation') ||
+      progress?.includes('Payment confirmed and finalized')
+    ) {
+      return <CheckCircle className="h-5 w-5 text-emerald-400" />;
     }
-    return <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />;
+    return <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />;
   };
 
   return (
     <>
-      <div className={`transition-all duration-500 ${isConnected ? 'animate-slide-up' : 'opacity-60'}`}>
-        {/* Show timer when hijacking is not yet allowed */}
+      <div className={`mx-auto w-full max-w-[44rem] transition-all duration-500 ${isConnected ? 'opacity-100' : 'opacity-90'}`}>
         {!isHijackingAllowed && formattedTimeRemaining && (
-          <HijackTimer formattedTimeRemaining={formattedTimeRemaining} />
+          <div className="mb-4 rounded-md border border-[#6a3146] bg-[rgba(18,6,13,0.82)] p-3">
+            <HijackTimer formattedTimeRemaining={formattedTimeRemaining} />
+          </div>
         )}
 
-        {/* Two Column Layout - Preview Left, Form Right */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Left Column - Token Preview */}
-          <div className="space-y-6">
-            <TokenPreview
-              tokenName={tokenName}
-              ticker={ticker}
-              description={description}
-              imagePreview={imagePreview}
-              xLink={xLink}
-              telegramLink={telegramLink}
-              websiteLink={websiteLink}
-              isSubmitting={isUpdating}
+        <div className={`forge-form-shell forge-form-shell-compact ${!isHijackingAllowed ? 'opacity-80' : ''}`}>
+          <div className="forge-panel-head">
+            <div className="forge-panel-title">Forge Metadata</div>
+            <p className="forge-panel-subtitle">Rename, re-symbol, and rebrand in one on-chain update.</p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-2.5 md:space-y-3">
+            <FloatingLabelInput
+              id="tokenName"
+              label="Name"
+              value={tokenName}
+              onChange={setTokenName}
+              placeholder="Enter Name"
+              disabled={!isConnected || !isHijackingAllowed || isUpdating}
             />
-          </div>
 
-          {/* Right Column - Hijack Form */}
-          <div className="space-y-6">
-            <Card className={`bg-card/80 backdrop-blur-sm border-border transition-all duration-300 ${isConnected && isHijackingAllowed ? 'border-primary/30 glow-red' : ''} ${!isHijackingAllowed ? 'opacity-60' : ''}`}>
-              <CardHeader>
-                <CardTitle className="text-2xl md:text-3xl flex items-center gap-3 text-glow font-space-grotesk">
-                  <Zap className="w-8 h-8 text-primary animate-pulse" />
-                  Hijack Token Metadata
-                </CardTitle>
-                <p className="text-muted-foreground text-lg">
-                  {!isHijackingAllowed 
-                    ? "Preparing for launch. Form will be enabled when countdown completes."
-                    : "Steal the billboard. Make it yours. Leave your mark on-chain."
-                  }
-                </p>
-              </CardHeader>
-              
-              <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  <div className="grid grid-cols-1 gap-6">
-                    <FloatingLabelInput
-                      id="tokenName"
-                      label="New Token Name"
-                      value={tokenName}
-                      onChange={setTokenName}
-                      placeholder="Enter the new identity..."
-                      disabled={!isConnected || !isHijackingAllowed || isUpdating}
-                    />
+            <FloatingLabelInput
+              id="ticker"
+              label="Symbol"
+              value={ticker}
+              onChange={setTicker}
+              placeholder="Enter Symbol"
+              maxLength={10}
+              disabled={!isConnected || !isHijackingAllowed || isUpdating}
+              transform={(value) => value.toUpperCase()}
+            />
 
-                    <FloatingLabelInput
-                      id="ticker"
-                      label="New Ticker Symbol"
-                      value={ticker}
-                      onChange={setTicker}
-                      placeholder="SYMBOL"
-                      maxLength={10}
-                      disabled={!isConnected || !isHijackingAllowed || isUpdating}
-                      transform={(value) => value.toUpperCase()}
-                    />
-                  </div>
+            <div className="forge-input-row">
+              <label htmlFor="description" className="forge-input-label">
+                Description
+              </label>
+              <span className="forge-colon">:</span>
+              <div className="relative flex-1">
+                <Textarea
+                  id="description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Describe token intent"
+                  disabled={!isConnected || !isHijackingAllowed || isUpdating}
+                  maxLength={250}
+                  rows={2}
+                  className="forge-input min-h-[44px] resize-none pr-16 pt-2.5 text-sm placeholder:text-[#7a5a66]"
+                />
+                <div className="forge-counter">{description.length}/250</div>
+              </div>
+            </div>
 
-                  {/* Description Field */}
-                  <div>
-                    <label className="block text-foreground font-medium text-lg mb-3">
-                      Description <span className="text-muted-foreground text-sm font-normal">(Optional)</span>
-                    </label>
-                    <Textarea
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                      placeholder="Describe your token's purpose, mission, or story..."
-                      disabled={!isConnected || !isHijackingAllowed || isUpdating}
-                      maxLength={250}
-                      rows={3}
-                      className="bg-background/50 border-border focus:border-primary/50 transition-colors resize-none"
-                    />
-                    <div className="text-xs text-muted-foreground mt-2">
-                      {description.length}/250 characters
-                    </div>
-                  </div>
+            <DragDropZone
+              onFileUpload={handleImageUpload}
+              imagePreview={imagePreview}
+              disabled={!isConnected || !isHijackingAllowed || isUpdating}
+            />
 
-                  <div>
-                    <label className="block text-foreground font-medium text-lg mb-3">
-                      New Profile Picture
-                    </label>
-                    <DragDropZone
-                      onFileUpload={handleImageUpload}
-                      imagePreview={imagePreview}
-                      disabled={!isConnected || !isHijackingAllowed || isUpdating}
-                    />
-                  </div>
+            {isUpdating && progress && (
+              <div className="rounded-md border border-primary/40 bg-primary/10 p-3">
+                <div className="flex items-center gap-3">
+                  {getProgressIcon()}
+                  <span className="text-sm font-medium text-[#f6d5df]">{progress}</span>
+                </div>
+              </div>
+            )}
 
-                  {/* Social Links Section */}
-                  <div className="space-y-4">
-                    <label className="block text-foreground font-medium text-lg">
-                      Social Links <span className="text-muted-foreground text-sm font-normal">(Optional)</span>
-                    </label>
-                    <div className="grid grid-cols-1 gap-4">
-                      <FloatingLabelInput
-                        id="xLink"
-                        label="X (Twitter) Link"
-                        value={xLink}
-                        onChange={setXLink}
-                        placeholder="https://x.com/username"
-                        disabled={!isConnected || !isHijackingAllowed || isUpdating}
-                      />
+            <Button
+              type="submit"
+              disabled={!isFormValid || isUpdating}
+              className={`forge-submit-btn forge-submit-btn-compact mx-auto mt-3 h-14 w-full max-w-[300px] text-[2rem] font-black uppercase tracking-[0.08em] ${
+                isUpdating ? 'opacity-90' : ''
+              }`}
+            >
+              {isUpdating ? (
+                <span className="flex items-center gap-2">
+                  <span className="h-5 w-5 animate-spin rounded-full border-2 border-white/25 border-t-white" />
+                  Processing
+                </span>
+              ) : !isHijackingAllowed ? (
+                <span className="flex items-center gap-2 text-lg">
+                  <Lock className="h-5 w-5" />
+                  Locked
+                </span>
+              ) : (
+                <span className="flex items-center gap-2">
+                  <LockIcon className="h-5 w-5" />
+                  Forge
+                </span>
+              )}
+            </Button>
 
-                      <FloatingLabelInput
-                        id="telegramLink"
-                        label="Telegram Link"
-                        value={telegramLink}
-                        onChange={setTelegramLink}
-                        placeholder="https://t.me/username"
-                        disabled={!isConnected || !isHijackingAllowed || isUpdating}
-                      />
-
-                      <FloatingLabelInput
-                        id="websiteLink"
-                        label="Website Link"
-                        value={websiteLink}
-                        onChange={setWebsiteLink}
-                        placeholder="https://yourwebsite.com"
-                        disabled={!isConnected || !isHijackingAllowed || isUpdating}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Dynamic Fee Display */}
-                  <div className="bg-secondary/30 p-6 rounded-lg border border-primary/20 neon-red">
-                    <div className="flex items-start gap-3">
-                      <AlertCircle className="w-6 h-6 text-primary mt-1 animate-pulse" />
-                      <div className="flex-1">
-                        <div className="text-primary font-bold text-lg mb-2">
-                          ⚡ Dynamic Hijack Pricing
-                        </div>
-                        
-                        {isFeeLoading ? (
-                          <div className="flex items-center gap-2">
-                            <div className="w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-                            <span className="text-muted-foreground">Loading current fee...</span>
-                          </div>
-                        ) : feeError ? (
-                          <p className="text-red-400">
-                            Error loading fee. Using fallback: <span className="font-bold">0.10 SOL</span>
-                          </p>
-                        ) : feeInfo ? (
-                          <div className="space-y-3">
-                            <div className="flex items-center gap-2">
-                              <span className="text-muted-foreground">Current hijack cost:</span>
-                              <span className="text-primary font-bold text-xl">{feeInfo.currentFee.toFixed(2)} SOL</span>
-                              <TrendingUp className="w-4 h-4 text-green-500" />
-                            </div>
-                            
-                            <div className="flex items-center gap-2">
-                              <span className="text-muted-foreground">Next hijack will cost:</span>
-                              <span className="text-orange-400 font-bold">{feeInfo.nextFeeAfterHijack.toFixed(2)} SOL</span>
-                            </div>
-                          </div>
-                        ) : null}
-                        
-                        <div className="text-xs text-muted-foreground mt-2">
-                          • Fee increases by 0.1 SOL after each hijack • Minimum fee: 0.1 SOL
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Enhanced progress indicator */}
-                  {isUpdating && progress && (
-                    <div className="bg-primary/10 p-4 rounded-lg border border-primary/30">
-                      <div className="flex items-center gap-3">
-                        {getProgressIcon()}
-                        <div className="flex-1">
-                          <span className="text-primary font-medium">{progress}</span>
-                          {progress.includes('confirmation') && (
-                            <div className="text-xs text-muted-foreground mt-1">
-                              Verifying transaction finality with 32+ confirmations...
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  <Button
-                    type="submit"
-                    disabled={!isFormValid || isUpdating}
-                    className={`w-full h-16 text-xl font-bold transition-all duration-300 button-unlock hover:shadow-2xl active:scale-95 ${
-                      isFormValid 
-                        ? 'bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 glow-red hover:glow-red-intense animate-glow-pulse' 
-                        : 'bg-secondary border border-border'
-                    } ${isUpdating ? 'animate-unlock' : ''}`}
-                  >
-                    {isUpdating ? (
-                      <div className="flex items-center gap-3">
-                        <div className="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                        {progress || 'Processing...'}
-                      </div>
-                    ) : !isHijackingAllowed ? (
-                      <div className="flex items-center gap-3">
-                        <Lock className="w-6 h-6" />
-                        🔒 Hijacking Locked Until 8:20 PM UTC
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-3">
-                        <LockIcon className="w-6 h-6" />
-                        🔓 Pay {feeInfo?.currentFee?.toFixed(2) || '...'} SOL to Hijack
-                      </div>
-                    )}
-                  </Button>
-
-                  {!isConnected && (
-                    <p className="text-center text-muted-foreground">
-                      Connect your wallet above to start the hijack
-                    </p>
-                  )}
-
-                  {!isHijackingAllowed && (
-                    <p className="text-center text-muted-foreground">
-                      First hijack launches at 8:20 PM UTC today. Get ready! 🚀
-                    </p>
-                  )}
-                </form>
-              </CardContent>
-            </Card>
-          </div>
+            <div className="forge-meta-bar">
+              <div className="forge-chip">
+                Fee {isFeeLoading ? '...' : feeError ? '0.10' : feeInfo?.currentFee.toFixed(2)} SOL
+              </div>
+              <div className="forge-chip">
+                {isConnected ? 'Wallet Connected' : 'Wallet Needed'}
+              </div>
+              <div className="forge-chip">
+                {isHijackingAllowed ? 'Forge Open' : 'Forge Locked'}
+              </div>
+            </div>
+          </form>
         </div>
       </div>
 

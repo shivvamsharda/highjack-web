@@ -58,6 +58,7 @@ serve(async (req) => {
       description: nft.json?.description || null,
       metadataUri: nft.uri,
       updateAuthority: nft.updateAuthorityAddress?.toString(),
+      isMutable: 'isMutable' in nft ? nft.isMutable : null,
       mintAddress: mintAddress,
       creators: nft.creators,
       collection: nft.collection,

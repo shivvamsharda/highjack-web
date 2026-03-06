@@ -32,6 +32,7 @@ export interface CurrentTokenMetadata {
   description: string | null;
   metadataUri: string;
   updateAuthority: string;
+  isMutable?: boolean | null;
   mintAddress: string;
   creators?: any[];
   collection?: any;

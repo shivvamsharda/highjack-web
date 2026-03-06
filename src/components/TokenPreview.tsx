@@ -141,8 +141,20 @@ const TokenPreview: React.FC<TokenPreviewProps> = ({
                       <span className="text-muted-foreground">Update Authority:</span>
                       <span className="font-mono">{truncateAddress(currentMetadata.updateAuthority)}</span>
                     </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Metadata:</span>
+                      <Badge variant={currentMetadata.isMutable === false ? "destructive" : "secondary"}>
+                        {currentMetadata.isMutable === false ? 'Immutable' : 'Mutable'}
+                      </Badge>
+                    </div>
                   </div>
                 </div>
+
+                {currentMetadata.isMutable === false && (
+                  <div className="rounded-lg border border-red-500/40 bg-red-500/10 p-3 text-xs text-red-300">
+                    This mint is immutable on-chain. Metadata updates will fail even with the correct authority.
+                  </div>
+                )}
               </div>
             ) : (
               <div className="flex flex-col items-center space-y-3 text-muted-foreground">

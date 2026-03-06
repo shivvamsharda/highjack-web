@@ -14,6 +14,34 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+function getErrorResponse(error: unknown) {
+  const message = error instanceof Error ? error.message : 'Unknown error'
+
+  if (
+    message.includes('immutable') ||
+    message.includes('Data is immutable') ||
+    message.includes('custom program error: 0x3b')
+  ) {
+    return {
+      status: 409,
+      body: {
+        success: false,
+        error: 'Token metadata is immutable',
+        details: 'This mint has immutable metadata on-chain, so it cannot be hijacked or updated.',
+      },
+    }
+  }
+
+  return {
+    status: 500,
+    body: {
+      success: false,
+      error: 'Failed to update token metadata on-chain',
+      details: message,
+    },
+  }
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -253,16 +281,11 @@ serve(async (req) => {
       await updateHijackRecordError(supabase, hijackRecordId, error.message)
     }
 
-    return new Response(
-      JSON.stringify({ 
-        success: false,
-        error: 'Failed to update token metadata on-chain', 
-        details: error.message 
-      }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
-        status: 500 
-      }
-    )
+    const errorResponse = getErrorResponse(error)
+
+    return new Response(JSON.stringify(errorResponse.body), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: errorResponse.status,
+    })
   }
 })

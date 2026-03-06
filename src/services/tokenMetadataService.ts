@@ -1,7 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { UpdateTokenMetadataParams, UpdateTokenMetadataResponse, FetchCurrentMetadataResponse } from '@/types/tokenMetadata';
-import { generateHMACSignature } from '@/utils/hmacUtils';
 
 export const tokenMetadataService = {
   async fetchCurrentMetadata(): Promise<FetchCurrentMetadataResponse> {
@@ -84,38 +83,12 @@ export const tokenMetadataService = {
     if (params.description) formData.append('description', params.description);
 
     try {
-      // Generate HMAC signature for this sensitive operation
-      const bodyString = JSON.stringify({
-        tokenName: params.tokenName,
-        ticker: params.ticker,
-        userWalletAddress: params.userWalletAddress,
-        paymentSignature: params.paymentSignature,
-        description: params.description
-      });
-      
-      const { signature, timestamp } = await generateHMACSignature(bodyString);
-
-      const { data, error } = await supabase.functions.invoke('api-gateway/update-token-metadata', {
-        body: formData,
-        headers: {
-          'x-signature': signature,
-          'x-timestamp': timestamp
-        }
+      const { data, error } = await supabase.functions.invoke('update-token-metadata', {
+        body: formData
       });
 
       if (error) {
-        console.error('API Gateway error for update:', error);
-        
-        // Fallback to direct function call
-        const fallbackResult = await supabase.functions.invoke('update-token-metadata', {
-          body: formData
-        });
-        
-        if (fallbackResult.error) {
-          throw new Error(fallbackResult.error.message || 'Failed to update token metadata');
-        }
-        
-        return fallbackResult.data;
+        throw new Error(error.message || 'Failed to update token metadata');
       }
 
       if (!data.success) {

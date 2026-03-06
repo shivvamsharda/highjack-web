@@ -50,6 +50,10 @@ export async function updateTokenMetadata(
     throw new Error('Token metadata not found on-chain')
   }
 
+  if ('isMutable' in currentMetadata && currentMetadata.isMutable === false) {
+    throw new Error('Token metadata is immutable on-chain and cannot be updated')
+  }
+
   console.log('Current update authority:', currentMetadata.updateAuthority)
   console.log('Our update authority:', updateAuthoritySigner.publicKey)
 

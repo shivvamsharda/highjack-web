@@ -23,6 +23,13 @@ export const useTokenMetadataUpdate = () => {
         throw new Error('Wallet not connected');
       }
 
+      setProgress('Checking token mutability...');
+
+      const metadataResult = await tokenMetadataService.fetchCurrentMetadata();
+      if (metadataResult.metadata?.isMutable === false) {
+        throw new Error('This token has immutable metadata on-chain and cannot be hijacked.');
+      }
+
       // Validate file size (max 10MB)
       if (params.imageFile.size > 10 * 1024 * 1024) {
         throw new Error('Image file too large. Maximum size is 10MB.');

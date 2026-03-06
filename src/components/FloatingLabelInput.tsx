@@ -24,7 +24,6 @@ const FloatingLabelInput: React.FC<FloatingLabelInputProps> = ({
   transform
 }) => {
   const [isFocused, setIsFocused] = useState(false);
-  const hasValue = value.length > 0;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = transform ? transform(e.target.value) : e.target.value;
@@ -32,29 +31,32 @@ const FloatingLabelInput: React.FC<FloatingLabelInputProps> = ({
   };
 
   return (
-    <div className="relative">
-      <Input
-        id={id}
-        value={value}
-        onChange={handleChange}
-        onFocus={() => setIsFocused(true)}
-        onBlur={() => setIsFocused(false)}
-        placeholder={placeholder}
-        maxLength={maxLength}
-        disabled={disabled}
-        className="h-14 pt-6 pb-2 px-4 bg-input/50 border-border focus:border-primary focus:ring-primary transition-all duration-300 placeholder:text-transparent"
-      />
+    <div className="forge-input-row">
       <label
         htmlFor={id}
-        className={`floating-label ${isFocused || hasValue ? 'active' : ''}`}
+        className={`forge-input-label ${isFocused ? 'text-[#ffd7e4]' : ''} ${disabled ? 'opacity-50' : ''}`}
       >
         {label}
       </label>
-      {maxLength && (
-        <div className="absolute right-3 bottom-2 text-xs text-muted-foreground">
-          {value.length}/{maxLength}
-        </div>
-      )}
+      <span className="forge-colon">:</span>
+      <div className="relative flex-1">
+        <Input
+          id={id}
+          value={value}
+          onChange={handleChange}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
+          placeholder={placeholder}
+          maxLength={maxLength}
+          disabled={disabled}
+          className="forge-input h-10 md:h-11 pr-16 placeholder:text-[#9f7988]"
+        />
+        {maxLength && (
+          <div className="forge-counter">
+            {value.length}/{maxLength}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
